@@ -1,4 +1,5 @@
 package src;
+import java.util.ArrayList;
 import java.util.List;
 import src.Range2D;
 
@@ -261,22 +262,35 @@ public class Ex2F {
     private static double calcSum(Range2D range, Ex2Sheet sheet) {
         double sum = 0;
         List<CellEntry> cells = range.getCellsInRange();
+
+        System.out.println("Start calcSum for range: " + range);
+
         for (int i = 0; i < cells.size(); i++) {
             CellEntry cell = cells.get(i);
             int x = cell.getX();
             int y = cell.getY();
+            System.out.println("Checking cell: (" + x + ", " + y + ")");
 
             if (sheet.get(x, y) != null) {
                 String value = sheet.eval(x, y);
+                System.out.println("Value at cell (" + x + ", " + y + ") = " + value);
+
                 if (isNumber(value)) {
                     double num = Double.parseDouble(value);
+                    System.out.println("Parsed number: " + num);
                     sum += num;
+                    System.out.println("Updated sum: " + sum);
+                } else {
+                    System.out.println("Not a number: " + value);
                 }
+            } else {
+                System.out.println("Cell is null");
             }
         }
+
+        System.out.println("Final sum: " + sum);
         return sum;
     }
-
 
     private static double calcMin(Range2D range, Ex2Sheet sheet) {
         double min = Double.MAX_VALUE;
@@ -301,10 +315,9 @@ public class Ex2F {
         if (foundNumber == true) {
             return min;
         } else {
-            return Double.NaN;
+            return Ex2Utils.ERR;
         }
     }
-
 
 
     private static double calcMax(Range2D range, Ex2Sheet sheet) {
@@ -321,7 +334,7 @@ public class Ex2F {
                 if (isNumber(value)) {
                     double num = Double.parseDouble(value);
                     if (num > max) {
-                        max= num;
+                        max = num;
                     }
 
                 }
@@ -330,12 +343,12 @@ public class Ex2F {
         if (foundNumber == true) {
             return max;
         } else {
-            return Double.NaN;
+            return Ex2Utils.ERR;
         }
     }
 
 
-    private  static double  calcAverage(Range2D range, Ex2Sheet sheet) {
+    private static double calcAverage(Range2D range, Ex2Sheet sheet) {
         double sum = 0;
         double count = 0;
         List<CellEntry> cells = range.getCellsInRange();
@@ -358,43 +371,94 @@ public class Ex2F {
             return average;
 
         } else {
-            return ERR_FOR;
+            return Ex2Utils.ERR;
         }
 
     }
 
-    private  static double  IfFunction(String expression){
+    private static String IfFunction(String expression) {
         expression = removeOuterParentheses(expression);
+        String[] parts = splitIfExpression(expression);
+        String condition = parts[0];
+        String ifTrue = parts[1];
+        String ifFalse = parts[2];
+        String[] operators = {"==", "!=", "<=", ">=", "<", ">"};
+        String operator = null;
+        int opIndex = -1;
 
-        String[] parts = expression.split(",");
-
-        if (expression.contains("==") || expression.contains("!=") || expression.contains("<=") ||
-                expression.contains(">=") || expression.contains("<") || expression.contains(">")) {
+        for (int i = 0; i < operators.length; i++) {
+            String currentOp = operators[i];
+            int index = condition.indexOf(currentOp);
+            if (index != -1) {
+                operator = currentOp;
+                opIndex = index;
+                break;
+            }
         }
-        int parenthesesCount = 0;
-        for (int i = expression.length() - 1; i >= 0; i--) {
+        String Formula1 = condition.substring(0, opIndex).trim();
+        String Formula2 = condition.substring(opIndex + operator.length()).trim();
+        Double v1 = computeForm(Formula1);
+        Double v2 = computeForm(Formula2);
+        if (v1 == null || v2 == null) {
+            return Ex2Utils.IF_ERR;
+        }
+
+        boolean conditionResult = false;
+        if (operator.equals("==")) {
+            conditionResult = Double.compare(v1, v2) == 0;
+        } else if (operator.equals("!=")) {
+            conditionResult = Double.compare(v1, v2) != 0;
+        } else if (operator.equals("<")) {
+            conditionResult = v1 < v2;
+        } else if (operator.equals(">")) {
+            conditionResult = v1 > v2;
+        } else if (operator.equals("<=")) {
+            conditionResult = v1 <= v2;
+        } else if (operator.equals(">=")) {
+            conditionResult = v1 >= v2;
+        }
+
+        String chosen = conditionResult ? ifTrue : ifFalse;
+
+        if (isText(chosen)) {
+            return chosen;
+        }
+
+        Double result = computeForm(chosen);
+        if (result == null) {
+            return Ex2Utils.IF_ERR;
+        }
+
+        return result.toString();
+    }
+
+
+    private static String[] splitIfExpression(String expression) {
+        expression = removeOuterParentheses(expression);
+        List<String> parts = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        int parens = 0;
+
+        for (int i = 0; i < expression.length(); i++) {
             char c = expression.charAt(i);
-            String Formula1 = expression.substring(0, i).trim();
-            String Formula2 = expression.substring(i + 1).trim();
 
-        if (expression.contains("==")){
-            Formula1.equals(Formula2);
-        }
-
-            if (expression.contains("!=")) {
-                if (!Formula1.equals(Formula2)) {
-                    return computeForm(ifTrue);
-                } else {
-                    return computeForm(ifFalse);
+            if (c == ',' && parens == 0) {
+                parts.add(current.toString().trim());
+                current.setLength(0);
+            } else {
+                if (c == '(') {
+                    parens++;
+                } else if (c == ')') {
+                    parens--;
                 }
-            }
-
-         if(expression.contains("<")){
-             Formula1.compareTo(Formula2) < 0 ;
-
-         }
-            if(expression.contains(">")){
-                Formula1 > Formula2;
-
+                current.append(c);
             }
         }
+        parts.add(current.toString().trim());
+
+        if (parts.size() != 3) {
+            return new String[0];
+        }
+        return null;
+    }
+}
