@@ -121,9 +121,11 @@ public class Ex2F {
     public static Double computeForm(String form) {
         if (!isForm(form)) return null;
 
+
         // Remove the = sign and trim
         String expression = form.substring(1).trim();
         return computeFormHelper(expression);
+
     }
 
     private static Double computeFormHelper(String expression) {
@@ -262,14 +264,10 @@ public class Ex2F {
     private static double calcSum(Range2D range, Ex2Sheet sheet) {
         double sum = 0;
         List<CellEntry> cells = range.getCellsInRange();
-
-        System.out.println("Start calcSum for range: " + range);
-
         for (int i = 0; i < cells.size(); i++) {
             CellEntry cell = cells.get(i);
             int x = cell.getX();
             int y = cell.getY();
-            System.out.println("Checking cell: (" + x + ", " + y + ")");
 
             if (sheet.get(x, y) != null) {
                 String value = sheet.eval(x, y);
@@ -378,6 +376,12 @@ public class Ex2F {
 
     private static String IfFunction(String expression) {
         expression = removeOuterParentheses(expression);
+
+        if (!expression.startsWith("=")) {
+            return Ex2Utils.IF_ERR;
+        }
+        expression = expression.substring(1).trim();
+
         String[] parts = splitIfExpression(expression);
         String condition = parts[0];
         String ifTrue = parts[1];
@@ -397,25 +401,25 @@ public class Ex2F {
         }
         String Formula1 = condition.substring(0, opIndex).trim();
         String Formula2 = condition.substring(opIndex + operator.length()).trim();
-        Double v1 = computeForm(Formula1);
-        Double v2 = computeForm(Formula2);
+        Object v1 = computeCondition(Formula1);
+        Object v2 = computeCondition(Formula2);
         if (v1 == null || v2 == null) {
             return Ex2Utils.IF_ERR;
         }
-
         boolean conditionResult = false;
+
         if (operator.equals("==")) {
-            conditionResult = Double.compare(v1, v2) == 0;
+            conditionResult = v1.equals(v2);
         } else if (operator.equals("!=")) {
-            conditionResult = Double.compare(v1, v2) != 0;
+            conditionResult = !v1.equals(v2);
         } else if (operator.equals("<")) {
-            conditionResult = v1 < v2;
+            conditionResult = (v1 instanceof Double && v2 instanceof Double) && ((Double) v1 < (Double) v2);
         } else if (operator.equals(">")) {
-            conditionResult = v1 > v2;
+            conditionResult = (v1 instanceof Double && v2 instanceof Double) && ((Double) v1 > (Double) v2);
         } else if (operator.equals("<=")) {
-            conditionResult = v1 <= v2;
+            conditionResult = (v1 instanceof Double && v2 instanceof Double) && ((Double) v1 <= (Double) v2);
         } else if (operator.equals(">=")) {
-            conditionResult = v1 >= v2;
+            conditionResult = (v1 instanceof Double && v2 instanceof Double) && ((Double) v1 >= (Double) v2);
         }
 
         String chosen = conditionResult ? ifTrue : ifFalse;
@@ -424,14 +428,12 @@ public class Ex2F {
             return chosen;
         }
 
-        Double result = computeForm(chosen);
+        Object result = computeCondition(chosen);
         if (result == null) {
             return Ex2Utils.IF_ERR;
         }
-
         return result.toString();
     }
-
 
     private static String[] splitIfExpression(String expression) {
         expression = removeOuterParentheses(expression);
@@ -459,6 +461,209 @@ public class Ex2F {
         if (parts.size() != 3) {
             return new String[0];
         }
+        return new String[]{parts.get(0), parts.get(1), parts.get(2)};
+
+    }
+
+    public static Object computeCondition(String form) {
+        if (!isForm(form)) return null;
+        String expression = form.substring(1).trim();
+        return computeConditionHelper(expression);
+    }
+
+    private static Object computeConditionHelper(String expression) {
+        expression = removeOuterParentheses(expression);
+
+        if (expression.startsWith("if(")) {
+            String result = IfFunction(expression);
+            if (isNumber(result)) {
+                return Double.parseDouble(result); // מחזיר מספר
+            } else {
+                return result; // מחזיר טקסט כפי שהוא
+            }
+        }
+
+        if (isNumber(expression)) {
+            return Double.parseDouble(expression);
+        }
+
+        if (expression.startsWith("=")) {
+            return computeConditionHelper(expression.substring(1).trim());
+        }
+
+        if (expression.startsWith("+")) {
+            return computeConditionHelper(expression.substring(1).trim());
+        }
+
+        if (expression.startsWith("-") && !isNumber(expression)) {
+            String remaining = expression.substring(1).trim();
+            Object val = computeConditionHelper(remaining);
+            if (val instanceof Double) {
+                return -((Double) val);
+            }
+            return null;
+        }
+
+        if (isCellReference(expression)) {
+            if (spreadsheet == null) return null;
+            CellEntry entry = new CellEntry(expression);
+            if (!entry.isValid()) return null;
+
+            String cellValue = spreadsheet.value(entry.getX(), entry.getY());
+            if (cellValue == null || cellValue.equals(Ex2Utils.EMPTY_CELL)) return null;
+
+            if (isNumber(cellValue)) {
+                return Double.parseDouble(cellValue);
+            } else {
+                return cellValue; // מחזיר טקסט מהתא
+            }
+        }
+
+        // + או -
+        int parens = 0;
+        for (int i = expression.length() - 1; i >= 0; i--) {
+            char c = expression.charAt(i);
+            if (c == ')') parens++;
+            else if (c == '(') parens--;
+
+            if (parens == 0 && (c == '+' || c == '-')) {
+                String left = expression.substring(0, i).trim();
+                String right = expression.substring(i + 1).trim();
+                Object lVal = computeConditionHelper(left);
+                Object rVal = computeConditionHelper(right);
+
+                if (lVal instanceof Double && rVal instanceof Double) {
+                    return (c == '+') ? (Double) lVal + (Double) rVal : (Double) lVal - (Double) rVal;
+                } else {
+                    return null;
+                }
+            }
+        }
+
+        // * או /
+        parens = 0;
+        for (int i = expression.length() - 1; i >= 0; i--) {
+            char c = expression.charAt(i);
+            if (c == ')') parens++;
+            else if (c == '(') parens--;
+
+            if (parens == 0 && (c == '*' || c == '/')) {
+                String left = expression.substring(0, i).trim();
+                String right = expression.substring(i + 1).trim();
+                Object lVal = computeConditionHelper(left);
+                Object rVal = computeConditionHelper(right);
+
+                if (lVal instanceof Double && rVal instanceof Double) {
+                    if (c == '*') return (Double) lVal * (Double) rVal;
+                    if ((Double) rVal != 0) return (Double) lVal / (Double) rVal;
+                    else return null;
+                } else {
+                    return null;
+                }
+            }
+        }
+
         return null;
     }
+
+    public static boolean isFunction(String s) {
+        return s.matches("^(sum|min|max|average)\\([A-Z][0-9]:[A-Z][0-9]\\)$");
+    }
+
+
+    private static String Function(String expression) {
+        expression = removeOuterParentheses(expression);
+
+        int openIndex = expression.indexOf('(');
+        int closeIndex = expression.lastIndexOf(')');
+
+        if (openIndex == -1 || closeIndex == -1 || closeIndex <= openIndex) {
+            return Ex2Utils.FUNC_ERR;
+        }
+
+        String funcName = expression.substring(0, openIndex).trim().toLowerCase();
+        String rangeStr = expression.substring(openIndex + 1, closeIndex).trim();
+
+        Range2D range;
+        try {
+            range = new Range2D(rangeStr);
+        } catch (Exception e) {
+            return Ex2Utils.FUNC_ERR;
+        }
+
+        if (!(spreadsheet instanceof Ex2Sheet)) {
+            return Ex2Utils.FUNC_ERR;
+        }
+
+        Ex2Sheet sheet = (Ex2Sheet) spreadsheet;
+
+        Double result = null;
+        if (funcName.equals("sum")) {
+            result = calcSum(range, sheet);
+        } else if (funcName.equals("min")) {
+            result = calcMin(range, sheet);
+        } else if (funcName.equals("max")) {
+            result = calcMax(range, sheet);
+        } else if (funcName.equals("average")) {
+            result = calcAverage(range, sheet);
+        } else {
+            return Ex2Utils.FUNC_ERR;
+        }
+
+        if (result == null || result.equals(Ex2Utils.ERR)) {
+            return Ex2Utils.FUNC_ERR;
+        }
+
+        return result.toString(); // מחזיר את התוצאה כמחרוזת
+    }
+
+    public static Object computeFunction(String form) {
+        if (form == null || !form.startsWith("=")) {
+            return Ex2Utils.FUNC_ERR;
+        }
+        String expression = form.substring(1).trim();
+        return computeFunctionHelper(expression);
+    }
+
+    private static Object computeFunctionHelper(String expression) {
+        expression = removeOuterParentheses(expression);
+
+        int openIndex = expression.indexOf('(');
+        int closeIndex = expression.lastIndexOf(')');
+
+        if (openIndex == -1 || closeIndex == -1 || closeIndex <= openIndex) {
+            return Ex2Utils.FUNC_ERR;
+        }
+
+        String funcName = expression.substring(0, openIndex).trim().toLowerCase();
+        String rangeStr = expression.substring(openIndex + 1, closeIndex).trim();
+
+        Range2D range;
+        try {
+            range = new Range2D(rangeStr);
+        } catch (Exception e) {
+            return Ex2Utils.FUNC_ERR;
+        }
+
+        if (!(spreadsheet instanceof Ex2Sheet)) {
+            return Ex2Utils.FUNC_ERR;
+        }
+
+        Ex2Sheet sheet = (Ex2Sheet) spreadsheet;
+
+        switch (funcName) {
+            case "sum":
+                return calcSum(range, sheet);
+            case "min":
+                return calcMin(range, sheet);
+            case "max":
+                return calcMax(range, sheet);
+            case "average":
+                return calcAverage(range, sheet);
+            default:
+                return Ex2Utils.FUNC_ERR;
+        }
+    }
 }
+
+
