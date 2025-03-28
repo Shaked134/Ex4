@@ -73,6 +73,9 @@ public class Ex2Sheet implements Sheet {
 
     @Override
     public void set(int x, int y, String s) {
+        System.out.println("Setting cell at (" + x + ", " + y + ") to: " + s);
+
+
         if (!isIn(x, y)) return;  // Check if coordinates are valid
         if (s == null) s = Ex2Utils.EMPTY_CELL;  // Handle null input
 
