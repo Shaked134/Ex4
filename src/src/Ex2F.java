@@ -413,7 +413,6 @@ public class Ex2F {
     }
 
 
-
     private static Object computeCondition(String condition) {
         condition = removeOuterParentheses(condition);
         System.out.println("computeCondition: evaluating condition -> " + condition);
@@ -432,13 +431,21 @@ public class Ex2F {
 
             System.out.println("computeCondition: val1 = " + val1 + ", val2 = " + val2);
 
-            if (!(val1 instanceof Double) || !(val2 instanceof Double)) {
-                System.out.println("computeCondition: one of the values is not a number.");
+            // בדיקה שני הערכים אינם null
+            if (val1 == null || val2 == null) {
                 return null;
             }
 
-            double a = (Double) val1;
-            double b = (Double) val2;
+            // המרה מפורשת לדאבל
+            double a, b;
+            try {
+                a = Double.parseDouble(val1.toString());
+                b = Double.parseDouble(val2.toString());
+            } catch (NumberFormatException e) {
+                // אם לא ניתן להמיר לערכים מספריים
+                return null;
+            }
+
             boolean result = false;
 
             switch (op) {
@@ -457,9 +464,6 @@ public class Ex2F {
         System.out.println("computeCondition: no comparison operator found.");
         return null;
     }
-
-
-
 
 
     private static  String findComparisonOperator(String expression) {
@@ -484,68 +488,72 @@ public class Ex2F {
         return null;
     }
     private static Object computeConditionHelper(String expression) {
-        if (expression == null || expression.isEmpty()) {                  // (1)
-            System.out.println("computeConditionHelper 472: expression is null or empty.");
+        if (expression == null || expression.isEmpty()) {
             return null;
         }
 
-        expression = expression.trim();                                     // (5)
-        System.out.println("computeConditionHelper 477: evaluating expression -> '" + expression + "'");
+        expression = expression.trim();
+        System.out.println("computeConditionHelper: evaluating expression -> '" + expression + "'");
 
-        if (isNumber(expression)) {                                         // (8)
-            System.out.println("computeConditionHelper480: detected number -> " + expression);
-            Double number = Double.parseDouble(expression);                 // (10)
-            System.out.println("computeConditionHelper482: returning number -> " + number);
-            return number;
+        // בדיקה אם זהו מספר
+        if (isNumber(expression)) {
+            System.out.println("computeConditionHelper: detected number -> " + expression);
+            return Double.parseDouble(expression);
         }
+
+        // בדיקה אם זוהי הפניה לתא
         if (isCellReference(expression)) {
+            System.out.println("computeConditionHelper: detected cell reference -> " + expression);
+
             if (spreadsheet == null) {
+                System.out.println("computeConditionHelper: spreadsheet is null!");
                 return null;
             }
 
-            CellEntry entry = new CellEntry(expression);
-            if (!entry.isValid()) {
+            CellEntry cell = new CellEntry(expression);
+            int x = cell.getX();
+            int y = cell.getY() - 1;
+            System.out.println("computeConditionHelper: corrected cell coordinates: (" + x + "," + y + ")");
+
+            // בדיקה שהתא בטווח תקין
+            if (!spreadsheet.isIn(x, y)) {
+                System.out.println("computeConditionHelper: cell out of range!");
                 return null;
             }
 
-            // קבל את ה-raw value של התא
-            String rawValue = spreadsheet.value(entry.getX(), entry.getY());
+            // קבלת הערך המלא של התא
+            String cellValue = spreadsheet.value(x, y);
+            System.out.println("computeConditionHelper: cell value: " + cellValue);
 
-            // ⬇️⬅️ הוסיפי את זה כאן:
-            if (Ex2Utils.ERR_CYCLE.equals(rawValue)) {
-                System.out.println("computeConditionHelper: ERR_CYCLE detected in " + expression);
-                return Ex2Utils.IF_ERR;
+            // אם הערך הוא מספר, החזר אותו כמספר
+            if (isNumber(cellValue)) {
+                Double numValue = Double.parseDouble(cellValue);
+                System.out.println("computeConditionHelper: parsed numeric value: " + numValue);
+                return numValue;
             }
 
-            if (rawValue == null || rawValue.equals(Ex2Utils.EMPTY_CELL)) {
-                return null;
-            }
-
-            // נסה להמיר למספר, אם אפשר
-            if (isNumber(rawValue)) {
-                return Double.parseDouble(rawValue);
-            }
-
-            // אם לא מספר, החזר את הערך כטקסט
-            return rawValue;
+            // אחרת, החזר את הערך כפי שהוא
+            return cellValue;
         }
 
-        if (isForm("=" + expression)) {                                     // (44)
-            System.out.println("computeConditionHelper493: detected formula -> " + expression);
-            Double val = computeForm("=" + expression);                     // (46)
-            System.out.println("computeConditionHelper 495: computed formula value -> " + val);
-            return val;                                                     // (48)
+        // המשך הקוד כפי שהיה...
+        // בדיקה אם זוהי נוסחה
+        if (isForm("=" + expression)) {
+            System.out.println("computeConditionHelper: detected formula -> " + expression);
+            Double val = computeForm("=" + expression);
+            System.out.println("computeConditionHelper: computed formula value -> " + val);
+            return val;
         }
 
-        if (isText(expression)) {                                           // (51)
-            System.out.println("computeConditionHelper 500: detected text -> '" + expression + "'");
-            return expression;                                              // (53)
+        // אם זהו טקסט פשוט
+        if (isText(expression)) {
+            System.out.println("computeConditionHelper: detected text -> '" + expression + "'");
+            return expression;
         }
 
-        System.out.println("computeConditionHelper 504: couldn't evaluate -> '" + expression + "'");
-        return null;                                                        // (56)
+        System.out.println("computeConditionHelper: couldn't evaluate -> '" + expression + "'");
+        return null;
     }
-
 
     private static String[] splitIfExpression(String expression) {
         expression = removeOuterParentheses(expression);

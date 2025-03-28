@@ -184,7 +184,7 @@ public class Ex2FTest {
 
 
 
-    //tests for If::
+    //tests for If
 
 
     @Test
@@ -222,20 +222,20 @@ public class Ex2FTest {
         assertEquals("big", result);
     }
 
-
-
-
     @Test
     public void testValidIfWithFormulas() {
         Ex2Sheet sheet = new Ex2Sheet();
         sheet.set(0, 0, "3");   // A1
         sheet.set(0, 1, "4");   // A2
         sheet.set(0, 2, "2");   // A3
-        Ex2F.setSpreadsheet(sheet);
+
+        Ex2F.setSpreadsheet(sheet); // ✅ צריך לבוא לפני eval
+        sheet.eval();               // 🛠️ זה מריץ את התאים שכבר הוגדרו
 
         String expr = "=if(A1*A2 != A3/(2-A1), =A2+2, =A1+1)";
         String result = Ex2F.IfFunction(expr);
-        assertEquals("6.0", result); // כי A1*A2 = 12, A3/(2-A1) = 2 / (2-3) = -2, ולכן !=
+
+        assertEquals("6.0", result);
     }
 
 
