@@ -19,7 +19,7 @@ package src;
         public static  final String[] ABC= {"A","B","C","D","E","F","G","H","I","J","K","L","O","M","N","P","Q","R","S","T","U","V","W","X","Y","Z"};
 
     public static final String IF_ERR = "ERR_WRONG_IF";
-    public static final String FUNC_ERR = "ERR_WRONG_FUNC";
+    public static final Object FUNC_ERR = "ERR_WRONG_FUNC";
 
         // ****** not implemented in Ex2!! ******
         // public static final String[] FUNCTIONS = {"if", "sin", "cos", "pow", "min", "max"};

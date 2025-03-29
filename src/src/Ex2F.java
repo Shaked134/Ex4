@@ -133,7 +133,28 @@ public class Ex2F {
         // Remove outer parentheses if they exist
         expression = removeOuterParentheses(expression);
 
-        // Try to parse as a simple number
+
+        if (isFUNCTION("=" + expression)) {
+            return computeFUNCTION("=" + expression);
+        }
+
+        // בדיקה אם זו פונקציית IF
+        if (expression.startsWith("if(")) {
+            String result = IfFunction("=" + expression);
+            if (result.equals(Ex2Utils.IF_ERR)) {
+                return null;
+            }
+            try {
+                return Double.parseDouble(result);
+            } catch (NumberFormatException e) {
+                // אם התוצאה היא טקסט, לא ניתן להמיר למספר
+                return null;
+
+
+            }
+        }
+
+                // Try to parse as a simple number
         if (isNumber(expression)) {
             Double number = Double.parseDouble(expression);
             return number;
@@ -159,8 +180,6 @@ public class Ex2F {
             String modifiedExpression = "0" + expression;
             return computeFormHelper(modifiedExpression);
         }
-
-
         // Check if it's a cell reference
         if (isCellReference(expression)) {
             if (spreadsheet == null) {
@@ -263,28 +282,16 @@ public class Ex2F {
     private static double calcSum(Range2D range, Ex2Sheet sheet) {
         double sum = 0;
         List<CellEntry> cells = range.getCellsInRange();
-        System.out.println("DEBUG: ========== calcSum START ==========");
-        System.out.println("DEBUG: Calculating SUM for range: " + range);
-        System.out.println("DEBUG: Total cells in range: " + cells.size());
-
         for (CellEntry cell : cells) {
             int x = cell.getX();
             int y = cell.getY();
             String value = sheet.eval(x, y);
-
-            System.out.println("DEBUG: Cell " + cell + " (x=" + x + ", y=" + y + ") has value: '" + value + "'");
-
             if (isNumber(value)) {
                 double num = Double.parseDouble(value);
                 sum += num;
-                System.out.println("DEBUG:  → Adding " + num + " to sum. Running total: " + sum);
-            } else {
-                System.out.println("DEBUG:  → Value is not a number. Skipping.");
             }
-        }
 
-        System.out.println("DEBUG: Final SUM result: " + sum);
-        System.out.println("DEBUG: ========== calcSum END ==========");
+            }
         return sum;
     }
 
@@ -292,13 +299,10 @@ public class Ex2F {
         double min = Double.MAX_VALUE;
         boolean foundNumber = false;
         List<CellEntry> cells = range.getCellsInRange();
-        System.out.println("Calculating MIN for range: " + range);
         for (CellEntry cell : cells) {
             int x = cell.getX();
             int y = cell.getY();
             String value = sheet.eval(x, y);
-            System.out.println("Cell " + cell + " has value: " + value);
-
             if (isNumber(value)) {
                 double num = Double.parseDouble(value);
                 if (num < min) {
@@ -307,7 +311,6 @@ public class Ex2F {
                 foundNumber = true;
             }
         }
-        System.out.println("MIN result: " + (foundNumber ? min : Ex2Utils.ERR));
         return foundNumber ? min : Ex2Utils.ERR;
     }
 
@@ -316,13 +319,10 @@ public class Ex2F {
         double max = -Double.MAX_VALUE;
         boolean foundNumber = false;
         List<CellEntry> cells = range.getCellsInRange();
-        System.out.println("Calculating MAX for range: " + range);
         for (CellEntry cell : cells) {
             int x = cell.getX();
             int y = cell.getY();
             String value = sheet.eval(x, y);
-            System.out.println("Cell " + cell + " has value: " + value);
-
             if (isNumber(value)) {
                 double num = Double.parseDouble(value);
                 if (num > max) {
@@ -331,7 +331,6 @@ public class Ex2F {
                 foundNumber = true;
             }
         }
-        System.out.println("MAX result: " + (foundNumber ? max : Ex2Utils.ERR));
         return foundNumber ? max : Ex2Utils.ERR;
     }
 
@@ -339,13 +338,10 @@ public class Ex2F {
         double sum = 0;
         int count = 0;
         List<CellEntry> cells = range.getCellsInRange();
-        System.out.println("Calculating AVERAGE for range: " + range);
         for (CellEntry cell : cells) {
             int x = cell.getX();
             int y = cell.getY();
             String value = sheet.eval(x, y);
-            System.out.println("Cell " + cell + " has value: " + value);
-
             if (isNumber(value)) {
                 double num = Double.parseDouble(value);
                 sum += num;
@@ -354,89 +350,71 @@ public class Ex2F {
         }
         if (count > 0) {
             double average = sum / count;
-            System.out.println("AVERAGE result: " + average);
             return average;
         } else {
-            System.out.println("AVERAGE result: " + Ex2Utils.ERR);
             return Ex2Utils.ERR;
         }
     }
     public static String IfFunction(String expression) {
         expression = removeOuterParentheses(expression);
-        System.out.println("Evaluating IF expression: " + expression);
-
         if (!expression.startsWith("=if(")) {
-            System.out.println("Not a valid IF expression.");
             return Ex2Utils.IF_ERR;
         }
 
         String[] parts = splitIfExpression(expression);
         if (parts.length != 3) {
-            System.out.println("IF expression split failed.");
             return Ex2Utils.IF_ERR;
         }
 
         String condition = parts[0];
         String ifTrue = parts[1];
         String ifFalse = parts[2];
-        System.out.println("Condition: " + condition + ", True: " + ifTrue + ", False: " + ifFalse);
-
         Object condResult = computeCondition(condition);
-
-// זיהוי שגיאות מהתנאי
-        if (condResult == null || condResult.toString().equals("ERR_FORM!") || !(condResult instanceof Boolean)) {
-            System.out.println("Condition is invalid or not boolean → returning IF_ERR");
+        if (condResult == null ||
+                Ex2Utils.ERR_FORM.equals(condResult.toString()) ||
+                Ex2Utils.IF_ERR.equals(condResult.toString()) ||
+                !(condResult instanceof Boolean)) {
             return Ex2Utils.IF_ERR;
         }
 
-
-
-        // מחשבים את שתי האפשרויות מראש, בלי קשר לתנאי
+        if (condResult instanceof String && condResult.equals(Ex2Utils.IF_ERR)) {
+            return Ex2Utils.IF_ERR;
+        }
         Object trueValue = computeConditionHelper(ifTrue);
         Object falseValue = computeConditionHelper(ifFalse);
 
-        // בוחרים את התוצאה לפי התנאי
         Object result = (Boolean) condResult ? trueValue : falseValue;
 
         if (result != null) {
-            System.out.println("Result: " + result.toString());
             return result.toString();
         }
-
-        System.out.println("Result is null.");
         return Ex2Utils.IF_ERR;
     }
 
     private static Object computeCondition(String condition) {
         condition = removeOuterParentheses(condition);
-        System.out.println("computeCondition: evaluating condition -> " + condition);
-
         String op = findComparisonOperator(condition);
         if (op != null) {
             int index = condition.indexOf(op);
             String Formula1 = condition.substring(0, index).trim();
             String Formula2 = condition.substring(index + op.length()).trim();
-
-            System.out.println("computeCondition: found operator '" + op + "'");
-            System.out.println("computeCondition: Formula1 -> '" + Formula1 + "', Formula2 -> '" + Formula2 + "'");
-
             Object val1 = computeConditionHelper(Formula1);
             Object val2 = computeConditionHelper(Formula2);
 
-            System.out.println("computeCondition: val1 = " + val1 + ", val2 = " + val2);
+            System.out.println("val1: " + val1 + " (" + val1.getClass().getSimpleName() + ")");
+            System.out.println("val2: " + val2 + " (" + val2.getClass().getSimpleName() + ")");
 
 
 
-
-            // אם אחד מהערכים הוא שגיאה, החזר false
+            if (Ex2Utils.IF_ERR.equals(val1) || Ex2Utils.IF_ERR.equals(val2)) {
+                return Ex2Utils.IF_ERR;
+            }
             if (val1 == null || val2 == null ||
-                    val1.toString().equals("ERR_FORM!") ||
-                    val2.toString().equals("ERR_FORM!")) {
-                return false;  // או החזר null, תלוי בדרישות המדויקות
+                    val1.equals(Ex2Utils.IF_ERR) ||
+                    val2.equals(Ex2Utils.IF_ERR)) {
+                return Ex2Utils.IF_ERR;
             }
 
-            // [הוספת קוד חדש - התחלה]
-            // אם שני הערכים הם מחרוזות, בצע השוואת מחרוזות
             if (val1 instanceof String && val2 instanceof String) {
                 String str1 = (String)val1;
                 String str2 = (String)val2;
@@ -446,16 +424,10 @@ public class Ex2F {
                     case "=":
                     case "==": result = str1.equals(str2); break;
                     case "!=": result = !str1.equals(str2); break;
-                    // לא מטפלים בהשוואות אחרות למחרוזות
                     default: return null;
                 }
-
-                System.out.println("computeCondition: result of string comparison -> " + result);
                 return result;
             }
-            // [הוספת קוד חדש - סיום]
-
-            // המרה מפורשת לדאבל
             try {
                 double a = Double.parseDouble(val1.toString());
                 double b = Double.parseDouble(val2.toString());
@@ -468,15 +440,12 @@ public class Ex2F {
                     case "<=": result = a <= b; break;
                     case ">=": result = a >= b; break;
                     case "==": result = a == b; break;
-                    case "=": result = a == b; break; // [שינוי - הוספת טיפול ב-= כמו ==]
+                    case "=": result = a == b; break;
                     case "!=": result = a != b; break;
                 }
 
-                System.out.println("computeCondition: result of condition -> " + result);
                 return result;
             } catch (NumberFormatException e) {
-                // [הוספת קוד חדש - התחלה]
-                // אם לא מצליחים להמיר למספרים, ננסה להשוות כמחרוזות
                 String str1 = val1.toString();
                 String str2 = val2.toString();
 
@@ -485,17 +454,11 @@ public class Ex2F {
                     case "=":
                     case "==": result = str1.equals(str2); break;
                     case "!=": result = !str1.equals(str2); break;
-                    // לא מטפלים בהשוואות אחרות למחרוזות
                     default: return null;
                 }
-
-                System.out.println("computeCondition: result of toString comparison -> " + result);
                 return result;
-                // [הוספת קוד חדש - סיום]
             }
         }
-
-        System.out.println("computeCondition: no comparison operator found.");
         return null;
     }
 
@@ -529,33 +492,25 @@ public class Ex2F {
         }
 
         expression = expression.trim();
-        System.out.println("computeConditionHelper: evaluating expression -> '" + expression + "'");
+
+        if (isFUNCTION("=" + expression)) {
+            Double val = computeFUNCTION("=" + expression);
+            return val;
+        }
 
         // בדיקה אם זהו מספר
         if (isNumber(expression)) {
-            System.out.println("computeConditionHelper: detected number -> " + expression);
             return Double.parseDouble(expression);
         }
 
-
-        // בדיקה אם מתחיל ב-= (נוסחה) - הוסף את זה כאן
         if (expression.startsWith("=")) {
-            // מסיר את ה-= מתחילת הביטוי
             String formulaExpression = expression.substring(1).trim();
-            System.out.println("computeConditionHelper: detected formula starting with = -> " + formulaExpression);
-
-            // חישוב הנוסחה באופן רקורסיבי
             return computeConditionHelper(formulaExpression);
         }
 
         // בדיקה אם זוהי הפניה לתא
         if (isCellReference(expression)) {
-            System.out.println("computeConditionHelper: detected cell reference -> " + expression);
-
-            // הדפס את תוצאת בדיקת ההפניה
-            System.out.println("isCellReference check: " + isCellReference(expression));
             if (spreadsheet == null) {
-                System.out.println("computeConditionHelper: spreadsheet is null!");
                 return null;
             }
 
@@ -563,55 +518,55 @@ public class Ex2F {
                 CellEntry cell = new CellEntry(expression);
                 int x = cell.getX();
                 int y = cell.getY() - 1;
-                System.out.println("computeConditionHelper: corrected cell coordinates: (" + x + "," + y + ")");
 
                 // בדיקה שהתא בטווח תקין
                 if (!spreadsheet.isIn(x, y)) {
-                    System.out.println("computeConditionHelper: cell out of range: x=" + x + ", y=" + y);
                     return null;
                 }
 
                 String cellValue = spreadsheet.value(x, y);
                 System.out.println("computeConditionHelper: cell value: '" + cellValue + "'");
 
+// בדיקה אם זה נוסחת sum/min/max/average שלא חושבה כמו שצריך
+                if (cellValue != null && (cellValue.equals(Ex2Utils.ERR_FORM) || cellValue.equals(Ex2Utils.ERR_CYCLE)) && spreadsheet.get(x, y) != null) {
+                    String raw = spreadsheet.get(x, y).getData();
+                    if (raw != null && isFUNCTION(raw)) {
+                        System.out.println("computeConditionHelper: retrying computeFUNCTION on raw -> " + raw);
+                        Double result = computeFUNCTION(raw);
+                        if (result != null) return result;
+                    }
+                }
+
 // אם התא מכיל פונקציית גיליון
                 if (isFUNCTION(cellValue)) {
-                    System.out.println("computeConditionHelper: cell contains FUNCTION -> " + cellValue);
                     Double result = computeFUNCTION(cellValue);
-                    System.out.println("computeConditionHelper: computed FUNCTION result -> " + result);
-                    return result != null ? result : "ERR_FORM!";
+                    if (result == null || result.equals(Ex2Utils.ERR)) {
+                        return Ex2Utils.IF_ERR;
+                    }
+                    return result;
                 }
-
-// אם התא מכיל נוסחה כללית
-                if (isForm(cellValue)) {
-                    System.out.println("computeConditionHelper: cell contains formula -> " + cellValue);
-                    Double result = computeForm(cellValue);
-                    System.out.println("computeConditionHelper: computed formula result -> " + result);
-                    return result != null ? result : "ERR_FORM!";
-                }
-
-
-
                 // בדיקה אם הערך ריק
                 if (cellValue == null || cellValue.isEmpty()) {
-                    System.out.println("computeConditionHelper: cell value is empty");
-                    return 0.0; // ערך ברירת מחדל לחישובים
+                    return Ex2Utils.IF_ERR; // ערך ברירת מחדל לחישובים
                 }
 
+                String cellRef = expression.toUpperCase();
+                if (cellRef.equalsIgnoreCase(cellValue.trim())) {
+                    return Ex2Utils.IF_ERR;
+                }
                 // אם הערך הוא מספר, החזר אותו כמספר
                 if (isNumber(cellValue)) {
                     Double numValue = Double.parseDouble(cellValue);
-                    System.out.println("computeConditionHelper: parsed numeric value: " + numValue);
                     return numValue;
                 }
 
                 // אחרת, החזר את הערך כפי שהוא
                 return cellValue;
             } catch (Exception e) {
-                System.out.println("computeConditionHelper: Exception while processing cell reference: " + e.getMessage());
                 e.printStackTrace();
                 return null;
             }
+
         }
 
         // Look for + or - at the top level first (lower precedence)
@@ -637,7 +592,6 @@ public class Ex2F {
                     double right = Double.parseDouble(rightValue.toString());
                     return c == '+' ? left + right : left - right;
                 } catch (NumberFormatException e) {
-                    System.out.println("computeConditionHelper: Cannot perform arithmetic on non-numeric values");
                     return null;
                 }
             }
@@ -670,12 +624,10 @@ public class Ex2F {
                         if (right != 0) {
                             return left / right;
                         } else {
-                            System.out.println("computeConditionHelper: Division by zero");
                             return null;
                         }
                     }
                 } catch (NumberFormatException e) {
-                    System.out.println("computeConditionHelper: Cannot perform arithmetic on non-numeric values");
                     return null;
                 }
             }
@@ -683,19 +635,15 @@ public class Ex2F {
 
         // בדיקה אם זוהי נוסחה
         if (isForm("=" + expression)) {
-            System.out.println("computeConditionHelper: detected formula -> " + expression);
             Double val = computeForm("=" + expression);
-            System.out.println("computeConditionHelper: computed formula value -> " + val);
             return val;
         }
 
         // אם זהו טקסט פשוט
         if (isText(expression)) {
-            System.out.println("computeConditionHelper: detected text -> '" + expression + "'");
             return expression;
         }
 
-        System.out.println("computeConditionHelper: couldn't evaluate -> '" + expression + "'");
         return null;
     }
 
@@ -731,14 +679,13 @@ public class Ex2F {
         parts.add(current.toString().trim());
 
         if (parts.size() != 3) {
-            System.out.println("SPLIT FAILED, parts: " + parts);
             return new String[0];
         }
         return new String[]{parts.get(0), parts.get(1), parts.get(2)};
     }
 
 
-    private static boolean isFUNCTION(String expr) {
+    public static boolean isFUNCTION(String expr) {
         if (expr == null || expr.isEmpty()) return false;
         expr = expr.trim().toLowerCase();
 
@@ -759,56 +706,41 @@ public class Ex2F {
         return false;
     }
     public static Double computeFUNCTION(String expr) {
-        System.out.println("DEBUG: computeFUNCTION called with -> " + expr);
-
         if (!isFUNCTION(expr)) {
-            System.out.println("DEBUG: Not a valid FUNCTION -> " + expr);
             return null;
         }
 
         String expression = expr.substring(1).trim(); // remove '='
-        System.out.println("DEBUG: Stripped '=' -> " + expression);
 
         String[] functions = {"min", "max", "sum", "average"};
 
         for (String func : functions) {
             if (expression.startsWith(func + "(") && expression.endsWith(")")) {
-                System.out.println("DEBUG: Detected function -> " + func);
 
                 String rangeText = expression.substring(func.length() + 1, expression.length() - 1).trim();
-                System.out.println("DEBUG: Extracted range text -> '" + rangeText + "'");
 
-                if (!rangeText.matches("[A-Z]\\d+:[A-Z]\\d+")) {
-                    System.out.println("DEBUG: Invalid range syntax -> " + rangeText);
-                    return null; // או אפשר להחזיר ERR אם את מעדיפה
+                if (!rangeText.matches("[A-Za-z]\\d+:[A-Za-z]\\d+")) {
+                    return null;
                 }
 
                 try {
                     Range2D range = new Range2D(rangeText);
-
                     Ex2Sheet sheet = (Ex2Sheet) spreadsheet;
-
                     switch (func) {
                         case "sum":
-                            System.out.println("DEBUG: Calling calcSum");
                             return calcSum(range, sheet);
                         case "min":
-                            System.out.println("DEBUG: Calling calcMin");
                             return calcMin(range, sheet);
                         case "max":
-                            System.out.println("DEBUG: Calling calcMax");
                             return calcMax(range, sheet);
                         case "average":
-                            System.out.println("DEBUG: Calling calcAverage");
                             return calcAverage(range, sheet);
                     }
                 } catch (Exception e) {
-                    System.out.println("DEBUG: Exception during function evaluation -> " + e.getMessage());
                     return Double.valueOf(Ex2Utils.ERR);
                 }
             }
         }
-        System.out.println("DEBUG: No matching function found in expression -> " + expression);
         return null;
     }
 

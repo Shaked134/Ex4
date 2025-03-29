@@ -52,6 +52,22 @@ public class SCell implements Cell {
             this.type = Ex2Utils.TEXT;
         } else if (Ex2F.isNumber(s)) {
             this.type = Ex2Utils.NUMBER;
+        } else if (s.startsWith("=if(")) {
+            // בדיקה אם זו פונקציית IF תקינה
+            String result = Ex2F.IfFunction(s);
+            if (result.equals(Ex2Utils.IF_ERR)) {
+                this.type = Ex2Utils.ERR_FORM_FORMAT;
+            } else {
+                this.type = Ex2Utils.FORM;
+            }
+        } else if (Ex2F.isFUNCTION(s)) {
+            // בדיקה אם זו פונקציית אגרגציה תקינה
+            Double result = Ex2F.computeFUNCTION(s);
+            if (result == null) {
+                this.type = Ex2Utils.ERR_FORM_FORMAT;
+            } else {
+                this.type = Ex2Utils.FORM;
+            }
         } else if (Ex2F.isForm(s)) {
             this.type = Ex2Utils.FORM;
         } else if (Ex2F.isText(s)) {

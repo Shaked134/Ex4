@@ -271,7 +271,6 @@ public class Ex2Sheet implements Sheet {
         Cell cell = get(x, y);
         if (cell == null) return null;
 
-        // For any type of cell, first check if it or its dependencies have cycles
         if (hasCycle(x, y, new boolean[width()][height()])) {
             cell.setType(Ex2Utils.ERR_CYCLE_FORM);
             return Ex2Utils.ERR_CYCLE;
@@ -283,7 +282,28 @@ public class Ex2Sheet implements Sheet {
                 return cell.getData();
             case Ex2Utils.FORM:
                 Ex2F.setSpreadsheet(this);
-                Double result = Ex2F.computeForm(cell.getData());
+                String data = cell.getData();
+
+                if (data.startsWith("=if(")) {
+                    String result = Ex2F.IfFunction(data);
+                    if (!result.equals(Ex2Utils.IF_ERR)) {
+                        return result;
+                    }
+                    cell.setType(Ex2Utils.ERR_FORM_FORMAT);
+                    return Ex2Utils.ERR_FORM;
+                }
+
+                if (Ex2F.isFUNCTION(data)) {
+                    Double result = Ex2F.computeFUNCTION(data);
+                    if (result != null) {
+                        return result.toString();
+                    }
+                    cell.setType(Ex2Utils.ERR_FORM_FORMAT);
+                    return Ex2Utils.ERR_FORM;
+                }
+
+                // טיפול בנוסחאות רגילות
+                Double result = Ex2F.computeForm(data);
                 if (result != null) {
                     return result.toString();
                 }
@@ -327,21 +347,51 @@ public class Ex2Sheet implements Sheet {
         visited[x][y] = false;
         return false;
     }
-
     private List<CellEntry> findCellReferences(String formula) {
         List<CellEntry> refs = new ArrayList<>();
         if (formula == null || !formula.startsWith("=")) return refs;
 
-        // Remove the '=' sign
-        formula = formula.substring(1);
+        // טיפול ב-Range2D בפונקציות כמו =sum(A1:B2)
+        if (Ex2F.isFUNCTION(formula)) {
+            String funcContent = formula.substring(formula.indexOf('(') + 1, formula.lastIndexOf(')'));
+            if (funcContent.contains(":")) {
+                try {
+                    Range2D range = new Range2D(funcContent);
+                    refs.addAll(range.getCellsInRange());
+                    return refs;
+                } catch (Exception e) {
+                    // פורמט טווח לא תקין, המשך לניתוח רגיל
+                }
+            }
+        }
 
-        // Split by operators and parentheses
-        String[] parts = formula.split("[+\\-*/()\\s]+");
+        // טיפול בפונקציית IF
+        if (formula.startsWith("=if(")) {
+            String ifContent = formula.substring(4, formula.lastIndexOf(')'));
+            String[] parts = ifContent.split(",");
+            if (parts.length == 3) {
+                // הוספת הפניות מהתנאי, מהחלק ה"אמת" ומהחלק ה"שקר"
+                for (String part : parts) {
+                    refs.addAll(findCellReferencesInExpression(part));
+                }
+                return refs;
+            }
+        }
+
+        // נוסחה רגילה - פיצול לפי אופרטורים וסוגריים
+        refs.addAll(findCellReferencesInExpression(formula.substring(1)));
+        return refs;
+    }
+
+    private List<CellEntry> findCellReferencesInExpression(String expr) {
+        List<CellEntry> refs = new ArrayList<>();
+        // פיצול לפי אופרטורים וסוגריים
+        String[] parts = expr.split("[+\\-*/(),:=<>!\\s]+");
 
         for (String part : parts) {
             part = part.trim();
             if (!part.isEmpty()) {
-                // Check if it's a cell reference (e.g., A1, B2)
+                // בדיקה אם זו הפניה לתא (למשל A1, B2)
                 if (Ex2F.isCellReference(part)) {
                     CellEntry entry = new CellEntry(part);
                     if (entry.isValid()) {
