@@ -382,13 +382,20 @@ public class Ex2F {
         }
         Object trueValue = computeConditionHelper(ifTrue);
         Object falseValue = computeConditionHelper(ifFalse);
-
         Object result = (Boolean) condResult ? trueValue : falseValue;
 
-        if (result != null) {
-            return result.toString();
+        if (result == null) {
+            return Ex2Utils.IF_ERR;
         }
-        return Ex2Utils.IF_ERR;
+
+        // המרה לסטרינג עם טיפול מיוחד
+        if (result instanceof Double) {
+            return result.toString();
+        } else if (result instanceof String) {
+            return result.toString().toUpperCase();
+        }
+
+        return result.toString();
     }
 
     private static Object computeCondition(String condition) {
@@ -401,11 +408,9 @@ public class Ex2F {
             Object val1 = computeConditionHelper(Formula1);
             Object val2 = computeConditionHelper(Formula2);
 
-            System.out.println("val1: " + val1 + " (" + val1.getClass().getSimpleName() + ")");
-            System.out.println("val2: " + val2 + " (" + val2.getClass().getSimpleName() + ")");
-
-
-
+            if (val1 == null || val2 == null) {
+                return Ex2Utils.IF_ERR;
+            }
             if (Ex2Utils.IF_ERR.equals(val1) || Ex2Utils.IF_ERR.equals(val2)) {
                 return Ex2Utils.IF_ERR;
             }
@@ -493,6 +498,7 @@ public class Ex2F {
 
         expression = expression.trim();
 
+
         if (isFUNCTION("=" + expression)) {
             Double val = computeFUNCTION("=" + expression);
             return val;
@@ -510,6 +516,8 @@ public class Ex2F {
 
         // בדיקה אם זוהי הפניה לתא
         if (isCellReference(expression)) {
+            expression = expression.toUpperCase();
+
             if (spreadsheet == null) {
                 return null;
             }
@@ -525,13 +533,11 @@ public class Ex2F {
                 }
 
                 String cellValue = spreadsheet.value(x, y);
-                System.out.println("computeConditionHelper: cell value: '" + cellValue + "'");
 
 // בדיקה אם זה נוסחת sum/min/max/average שלא חושבה כמו שצריך
                 if (cellValue != null && (cellValue.equals(Ex2Utils.ERR_FORM) || cellValue.equals(Ex2Utils.ERR_CYCLE)) && spreadsheet.get(x, y) != null) {
                     String raw = spreadsheet.get(x, y).getData();
                     if (raw != null && isFUNCTION(raw)) {
-                        System.out.println("computeConditionHelper: retrying computeFUNCTION on raw -> " + raw);
                         Double result = computeFUNCTION(raw);
                         if (result != null) return result;
                     }
@@ -633,13 +639,13 @@ public class Ex2F {
             }
         }
 
-        // בדיקה אם זוהי נוסחה
+        // if it is form
         if (isForm("=" + expression)) {
             Double val = computeForm("=" + expression);
             return val;
         }
 
-        // אם זהו טקסט פשוט
+        //if it is text
         if (isText(expression)) {
             return expression;
         }

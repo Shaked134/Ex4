@@ -10,8 +10,8 @@ private CellEntry Index2D_a ;
 
 public  Range2D( String  range){
     String[] parts = range.split(":");
-    this.Index2D_a= new CellEntry( parts[0]);
-    this.Index2D_b=  new CellEntry( parts[1]);
+    this.Index2D_a= new CellEntry( parts[0].toUpperCase());
+    this.Index2D_b=  new CellEntry( parts[1].toUpperCase());
 
 }
     public Index2D getStartCell() {

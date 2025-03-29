@@ -212,7 +212,7 @@ public class Ex2FTest {
         String expr = "=if(A1>2,big,small)";
         String result = Ex2F.IfFunction(expr);
 
-        assertEquals("big", result);
+        assertEquals("BIG", result);
     }
 
     @Test
@@ -241,7 +241,7 @@ public class Ex2FTest {
 
         String expr = "=if(A1>2,big,small)";
         String result = Ex2F.IfFunction(expr);
-        assertEquals("big", result);
+        assertEquals("BIG", result);
     }
 
     @Test
@@ -252,7 +252,7 @@ public class Ex2FTest {
 
         String expr = "=if(A2=A2,same,diff)";
         String result = Ex2F.IfFunction(expr);
-        assertEquals("same", result);
+        assertEquals("SAME", result);
     }
 
     @Test
@@ -265,7 +265,7 @@ public class Ex2FTest {
 
         String expr = "=if(A3>10,high,low)";
         String result = Ex2F.IfFunction(expr);
-        assertEquals("high", result);
+        assertEquals("HIGH", result);
     }
 
     @Test
