@@ -170,14 +170,6 @@ public class Ex2F {
             if (!entry.isValid()) {
                 return null;
             }
-
-
-            System.out.println("DEBUG: computeFormHelper trying to read cell '" + expression + "'");
-            System.out.println("DEBUG: spreadsheet.value -> " + spreadsheet.value(entry.getX(), entry.getY()));
-            System.out.println("DEBUG: spreadsheet.eval -> " + spreadsheet.eval(entry.getX(), entry.getY()));
-
-
-
             String cellValue = spreadsheet.value(entry.getX(), entry.getY());
             if (cellValue == null || cellValue.equals(Ex2Utils.EMPTY_CELL)) {
                 return null;
@@ -391,10 +383,13 @@ public class Ex2F {
 
         Object condResult = computeCondition(condition);
 
-        if (!(condResult instanceof Boolean)) {
-            System.out.println("Condition is not boolean.");
+// זיהוי שגיאות מהתנאי
+        if (condResult == null || condResult.toString().equals("ERR_FORM!") || !(condResult instanceof Boolean)) {
+            System.out.println("Condition is invalid or not boolean → returning IF_ERR");
             return Ex2Utils.IF_ERR;
         }
+
+
 
         // מחשבים את שתי האפשרויות מראש, בלי קשר לתנאי
         Object trueValue = computeConditionHelper(ifTrue);
@@ -411,7 +406,6 @@ public class Ex2F {
         System.out.println("Result is null.");
         return Ex2Utils.IF_ERR;
     }
-
 
     private static Object computeCondition(String condition) {
         condition = removeOuterParentheses(condition);
@@ -431,43 +425,82 @@ public class Ex2F {
 
             System.out.println("computeCondition: val1 = " + val1 + ", val2 = " + val2);
 
-            // בדיקה שני הערכים אינם null
-            if (val1 == null || val2 == null) {
-                return null;
+
+
+
+            // אם אחד מהערכים הוא שגיאה, החזר false
+            if (val1 == null || val2 == null ||
+                    val1.toString().equals("ERR_FORM!") ||
+                    val2.toString().equals("ERR_FORM!")) {
+                return false;  // או החזר null, תלוי בדרישות המדויקות
             }
+
+            // [הוספת קוד חדש - התחלה]
+            // אם שני הערכים הם מחרוזות, בצע השוואת מחרוזות
+            if (val1 instanceof String && val2 instanceof String) {
+                String str1 = (String)val1;
+                String str2 = (String)val2;
+
+                boolean result = false;
+                switch (op) {
+                    case "=":
+                    case "==": result = str1.equals(str2); break;
+                    case "!=": result = !str1.equals(str2); break;
+                    // לא מטפלים בהשוואות אחרות למחרוזות
+                    default: return null;
+                }
+
+                System.out.println("computeCondition: result of string comparison -> " + result);
+                return result;
+            }
+            // [הוספת קוד חדש - סיום]
 
             // המרה מפורשת לדאבל
-            double a, b;
             try {
-                a = Double.parseDouble(val1.toString());
-                b = Double.parseDouble(val2.toString());
+                double a = Double.parseDouble(val1.toString());
+                double b = Double.parseDouble(val2.toString());
+
+                boolean result = false;
+
+                switch (op) {
+                    case "<": result = a < b; break;
+                    case ">": result = a > b; break;
+                    case "<=": result = a <= b; break;
+                    case ">=": result = a >= b; break;
+                    case "==": result = a == b; break;
+                    case "=": result = a == b; break; // [שינוי - הוספת טיפול ב-= כמו ==]
+                    case "!=": result = a != b; break;
+                }
+
+                System.out.println("computeCondition: result of condition -> " + result);
+                return result;
             } catch (NumberFormatException e) {
-                // אם לא ניתן להמיר לערכים מספריים
-                return null;
+                // [הוספת קוד חדש - התחלה]
+                // אם לא מצליחים להמיר למספרים, ננסה להשוות כמחרוזות
+                String str1 = val1.toString();
+                String str2 = val2.toString();
+
+                boolean result = false;
+                switch (op) {
+                    case "=":
+                    case "==": result = str1.equals(str2); break;
+                    case "!=": result = !str1.equals(str2); break;
+                    // לא מטפלים בהשוואות אחרות למחרוזות
+                    default: return null;
+                }
+
+                System.out.println("computeCondition: result of toString comparison -> " + result);
+                return result;
+                // [הוספת קוד חדש - סיום]
             }
-
-            boolean result = false;
-
-            switch (op) {
-                case "<": result = a < b; break;
-                case ">": result = a > b; break;
-                case "<=": result = a <= b; break;
-                case ">=": result = a >= b; break;
-                case "==": result = a == b; break;
-                case "!=": result = a != b; break;
-            }
-
-            System.out.println("computeCondition: result of condition -> " + result);
-            return result;
         }
 
         System.out.println("computeCondition: no comparison operator found.");
         return null;
     }
 
-
     private static  String findComparisonOperator(String expression) {
-        String[] ops = {"<=", ">=", "==", "!=", "<", ">"};
+        String[] ops = {"<=", ">=", "==", "!=", "<", ">" , "="};
         int parentheses = 0;
 
         for (int i = 0; i < expression.length(); i++) {
@@ -487,6 +520,9 @@ public class Ex2F {
 
         return null;
     }
+
+
+
     private static Object computeConditionHelper(String expression) {
         if (expression == null || expression.isEmpty()) {
             return null;
@@ -501,42 +537,150 @@ public class Ex2F {
             return Double.parseDouble(expression);
         }
 
+
+        // בדיקה אם מתחיל ב-= (נוסחה) - הוסף את זה כאן
+        if (expression.startsWith("=")) {
+            // מסיר את ה-= מתחילת הביטוי
+            String formulaExpression = expression.substring(1).trim();
+            System.out.println("computeConditionHelper: detected formula starting with = -> " + formulaExpression);
+
+            // חישוב הנוסחה באופן רקורסיבי
+            return computeConditionHelper(formulaExpression);
+        }
+
         // בדיקה אם זוהי הפניה לתא
         if (isCellReference(expression)) {
             System.out.println("computeConditionHelper: detected cell reference -> " + expression);
 
+            // הדפס את תוצאת בדיקת ההפניה
+            System.out.println("isCellReference check: " + isCellReference(expression));
             if (spreadsheet == null) {
                 System.out.println("computeConditionHelper: spreadsheet is null!");
                 return null;
             }
 
-            CellEntry cell = new CellEntry(expression);
-            int x = cell.getX();
-            int y = cell.getY() - 1;
-            System.out.println("computeConditionHelper: corrected cell coordinates: (" + x + "," + y + ")");
+            try {
+                CellEntry cell = new CellEntry(expression);
+                int x = cell.getX();
+                int y = cell.getY() - 1;
+                System.out.println("computeConditionHelper: corrected cell coordinates: (" + x + "," + y + ")");
 
-            // בדיקה שהתא בטווח תקין
-            if (!spreadsheet.isIn(x, y)) {
-                System.out.println("computeConditionHelper: cell out of range!");
+                // בדיקה שהתא בטווח תקין
+                if (!spreadsheet.isIn(x, y)) {
+                    System.out.println("computeConditionHelper: cell out of range: x=" + x + ", y=" + y);
+                    return null;
+                }
+
+                String cellValue = spreadsheet.value(x, y);
+                System.out.println("computeConditionHelper: cell value: '" + cellValue + "'");
+
+// אם התא מכיל פונקציית גיליון
+                if (isFUNCTION(cellValue)) {
+                    System.out.println("computeConditionHelper: cell contains FUNCTION -> " + cellValue);
+                    Double result = computeFUNCTION(cellValue);
+                    System.out.println("computeConditionHelper: computed FUNCTION result -> " + result);
+                    return result != null ? result : "ERR_FORM!";
+                }
+
+// אם התא מכיל נוסחה כללית
+                if (isForm(cellValue)) {
+                    System.out.println("computeConditionHelper: cell contains formula -> " + cellValue);
+                    Double result = computeForm(cellValue);
+                    System.out.println("computeConditionHelper: computed formula result -> " + result);
+                    return result != null ? result : "ERR_FORM!";
+                }
+
+
+
+                // בדיקה אם הערך ריק
+                if (cellValue == null || cellValue.isEmpty()) {
+                    System.out.println("computeConditionHelper: cell value is empty");
+                    return 0.0; // ערך ברירת מחדל לחישובים
+                }
+
+                // אם הערך הוא מספר, החזר אותו כמספר
+                if (isNumber(cellValue)) {
+                    Double numValue = Double.parseDouble(cellValue);
+                    System.out.println("computeConditionHelper: parsed numeric value: " + numValue);
+                    return numValue;
+                }
+
+                // אחרת, החזר את הערך כפי שהוא
+                return cellValue;
+            } catch (Exception e) {
+                System.out.println("computeConditionHelper: Exception while processing cell reference: " + e.getMessage());
+                e.printStackTrace();
                 return null;
             }
-
-            // קבלת הערך המלא של התא
-            String cellValue = spreadsheet.value(x, y);
-            System.out.println("computeConditionHelper: cell value: " + cellValue);
-
-            // אם הערך הוא מספר, החזר אותו כמספר
-            if (isNumber(cellValue)) {
-                Double numValue = Double.parseDouble(cellValue);
-                System.out.println("computeConditionHelper: parsed numeric value: " + numValue);
-                return numValue;
-            }
-
-            // אחרת, החזר את הערך כפי שהוא
-            return cellValue;
         }
 
-        // המשך הקוד כפי שהיה...
+        // Look for + or - at the top level first (lower precedence)
+        int parenthesesCount = 0;
+        for (int i = expression.length() - 1; i >= 0; i--) {
+            char c = expression.charAt(i);
+
+            if (c == ')') parenthesesCount++;
+            else if (c == '(') parenthesesCount--;
+
+            if (parenthesesCount == 0 && (c == '+' || c == '-')) {
+                String leftPart = expression.substring(0, i).trim();
+                String rightPart = expression.substring(i + 1).trim();
+                Object leftValue = computeConditionHelper(leftPart);
+                Object rightValue = computeConditionHelper(rightPart);
+
+                if (leftValue == null || rightValue == null) {
+                    return null;
+                }
+
+                try {
+                    double left = Double.parseDouble(leftValue.toString());
+                    double right = Double.parseDouble(rightValue.toString());
+                    return c == '+' ? left + right : left - right;
+                } catch (NumberFormatException e) {
+                    System.out.println("computeConditionHelper: Cannot perform arithmetic on non-numeric values");
+                    return null;
+                }
+            }
+        }
+
+        // Then look for * or / (higher precedence)
+        parenthesesCount = 0;
+        for (int i = expression.length() - 1; i >= 0; i--) {
+            char c = expression.charAt(i);
+            if (c == ')') parenthesesCount++;
+            else if (c == '(') parenthesesCount--;
+
+            if (parenthesesCount == 0 && (c == '*' || c == '/')) {
+                String leftPart = expression.substring(0, i).trim();
+                String rightPart = expression.substring(i + 1).trim();
+                Object leftValue = computeConditionHelper(leftPart);
+                Object rightValue = computeConditionHelper(rightPart);
+
+                if (leftValue == null || rightValue == null) {
+                    return null;
+                }
+
+                try {
+                    double left = Double.parseDouble(leftValue.toString());
+                    double right = Double.parseDouble(rightValue.toString());
+
+                    if (c == '*') {
+                        return left * right;
+                    } else {
+                        if (right != 0) {
+                            return left / right;
+                        } else {
+                            System.out.println("computeConditionHelper: Division by zero");
+                            return null;
+                        }
+                    }
+                } catch (NumberFormatException e) {
+                    System.out.println("computeConditionHelper: Cannot perform arithmetic on non-numeric values");
+                    return null;
+                }
+            }
+        }
+
         // בדיקה אם זוהי נוסחה
         if (isForm("=" + expression)) {
             System.out.println("computeConditionHelper: detected formula -> " + expression);
@@ -554,6 +698,8 @@ public class Ex2F {
         System.out.println("computeConditionHelper: couldn't evaluate -> '" + expression + "'");
         return null;
     }
+
+
 
     private static String[] splitIfExpression(String expression) {
         expression = removeOuterParentheses(expression);

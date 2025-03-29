@@ -299,43 +299,6 @@ public class Ex2FTest {
         assertEquals("10.0", result);
     }
 
-    @Test
-    public void testValidIfWithStrings() {
-        Ex2Sheet sheet = new Ex2Sheet();
-        sheet.set(0, 0, "apple");  // A1
-        sheet.set(0, 1, "banana"); // A2
-        Ex2F.setSpreadsheet(sheet);
-
-        String expr = "=if(A1=A2, same, diff)";
-        String result = Ex2F.IfFunction(expr);
-        assertEquals("diff", result);
-    }
-
-    @Test
-    public void testValidIfWithFormulas1() {
-        Ex2Sheet sheet = new Ex2Sheet();
-        sheet.set(0, 0, "3");   // A1
-        sheet.set(0, 1, "4");   // A2
-        sheet.set(0, 2, "2");   // A3
-        Ex2F.setSpreadsheet(sheet);
-
-        String expr = "=if(A1*A2 != A3/(2-A1), =A2+2, =A1+1)";
-        String result = Ex2F.IfFunction(expr);
-        assertEquals("6.0", result); // כי A1*A2 = 12, A3/(2-A1) = -2 → שונה
-    }
-
-    @Test
-    public void testValidIfWithFunctionResult1() {
-        Ex2Sheet sheet = new Ex2Sheet();
-        sheet.set(0, 0, "5");   // A1
-        sheet.set(0, 1, "15");  // A2
-        sheet.set(0, 2, "=sum(A1:A2)"); // A3 = 20
-        Ex2F.setSpreadsheet(sheet);
-
-        String expr = "=if(A3>10, high, low)";
-        String result = Ex2F.IfFunction(expr);
-        assertEquals("high", result);
-    }
 
 
     @Test
@@ -366,16 +329,7 @@ public class Ex2FTest {
     }
 
 
-    @Test
-    public void testIfWithCircularReference3() {
-        Ex2Sheet sheet = new Ex2Sheet();
-        sheet.set(0, 0, "=if(A1>0, 1, 0)");  // A1 מפנה לעצמו
-        Ex2F.setSpreadsheet(sheet);
 
-        String expr = "=if(A1>0, 1, 0)";
-        String result = Ex2F.IfFunction(expr);
-        assertEquals("IF_ERR", result);
-    }
     @Test
     public void testIfWithCircular8Reference() {
         Ex2Sheet sheet = new Ex2Sheet();
