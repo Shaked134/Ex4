@@ -1,0 +1,24 @@
+ #  Ex4 - Object-Oriented Spreadsheet System (Advanced):
+
+
+ ## Overview:
+
+This project extends a basic object-oriented spreadsheet system written in Java, originally designed in Ex2, by introducing advanced features such as:
+Range support (e.g., A1:C5)
+
+Built-in functions (sum, min, max, average)
+
+Conditional expressions using if(...)
+
+Improved error handling and dependency management
+
+Each cell in the spreadsheet can hold:
+
+Plain text (e.g., "Hello", "abc123")
+
+Numeric values (e.g., 42, -3.5)
+
+Formulas (e.g., =A1+2, =sum(B2:C4), =if(A1>0, 1, 0))
+
+The system supports dynamic evaluation, error propagation, circular dependency detection, and maintains the computational depth of cells.
+

@@ -154,7 +154,7 @@ public class Ex2F {
             }
         }
 
-                // Try to parse as a simple number
+        // Try to parse as a simple number
         if (isNumber(expression)) {
             Double number = Double.parseDouble(expression);
             return number;
@@ -291,7 +291,7 @@ public class Ex2F {
                 sum += num;
             }
 
-            }
+        }
         return sum;
     }
 
