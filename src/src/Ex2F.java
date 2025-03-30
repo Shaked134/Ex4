@@ -138,7 +138,6 @@ public class Ex2F {
             return computeFUNCTION("=" + expression);
         }
 
-        // בדיקה אם זו פונקציית IF
         if (expression.startsWith("if(")) {
             String result = IfFunction("=" + expression);
             if (result.equals(Ex2Utils.IF_ERR)) {
@@ -147,10 +146,7 @@ public class Ex2F {
             try {
                 return Double.parseDouble(result);
             } catch (NumberFormatException e) {
-                // אם התוצאה היא טקסט, לא ניתן להמיר למספר
                 return null;
-
-
             }
         }
 
@@ -367,6 +363,8 @@ public class Ex2F {
             System.out.println("DEBUG: splitIfExpression failed → " + expression);
             return Ex2Utils.IF_ERR;
         }
+
+
 
         String condition = parts[0];
         String ifTrue = parts[1];
@@ -710,7 +708,7 @@ public class Ex2F {
 
 
 
-        private static String[] splitIfExpression(String expression) {
+    private static String[] splitIfExpression(String expression) {
         expression = removeOuterParentheses(expression);
 
         if (expression.startsWith("=if(") && expression.endsWith(")")) {

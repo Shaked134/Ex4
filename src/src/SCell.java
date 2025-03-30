@@ -40,7 +40,6 @@ public class SCell implements Cell {
 
     @Override
     public void setData(String s) {
-        System.out.println("DEBUG: SCell.setData called with: " + s);
 
 
         if (s == null) {
@@ -59,7 +58,6 @@ public class SCell implements Cell {
             // בדיקה אם זו פונקציית IF תקינה
             String result = Ex2F.IfFunction(s);
 
-            System.out.println("DEBUG: SCell.setData - result from IfFunction: " + result);
 
 
             if (result.equals(Ex2Utils.IF_ERR)) {
@@ -68,7 +66,6 @@ public class SCell implements Cell {
                 this.type = Ex2Utils.FORM;
             }
         } else if (Ex2F.isFUNCTION(s)) {
-            // בדיקה אם זו פונקציית אגרגציה תקינה
             Double result = Ex2F.computeFUNCTION(s);
             if (result == null) {
                 this.type = Ex2Utils.ERR_FORM_FORMAT;

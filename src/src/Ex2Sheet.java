@@ -73,8 +73,6 @@ public class Ex2Sheet implements Sheet {
 
     @Override
     public void set(int x, int y, String s) {
-        System.out.println("Setting cell at (" + x + ", " + y + ") to: " + s);
-
 
         if (!isIn(x, y)) return;  // Check if coordinates are valid
         if (s == null) s = Ex2Utils.EMPTY_CELL;  // Handle null input
@@ -197,6 +195,7 @@ public class Ex2Sheet implements Sheet {
         }
     }
 
+
     @Override
     public void load(String fileName) throws IOException {
         // Clear current spreadsheet
@@ -211,8 +210,8 @@ public class Ex2Sheet implements Sheet {
             String line = reader.readLine();
 
             while ((line = reader.readLine()) != null) {
-                // Split by comma, but only for the first 3 parts
-                String[] parts = line.split(",", 3);
+                // Split by comma
+                String[] parts = line.split(",");
 
                 // Check if line has correct format
                 if (parts.length >= 3) {
@@ -221,15 +220,47 @@ public class Ex2Sheet implements Sheet {
                         int y = Integer.parseInt(parts[1].trim());
                         String value = parts[2].trim();
 
-                        // Remove any trailing comments/remarks
-                        int commentStart = value.indexOf(',');
-                        if (commentStart != -1) {
-                            value = value.substring(0, commentStart).trim();
-                        }
+                        // Check if there are additional fields
+                        if (parts.length > 3) {
+                            // There might be a comment in the value part or additional fields
+                            // We'll assume that if parts[3] can be parsed as an integer, it's a type
+                            try {
+                                int type = Integer.parseInt(parts[3].trim());
 
-                        // Set cell if coordinates are valid
-                        if (isIn(x, y)) {
-                            set(x, y, value);
+                                // If it has a type, we'll check for an order
+                                if (parts.length > 4) {
+                                    int order = Integer.parseInt(parts[4].trim());
+
+                                    // Set cell if coordinates are valid
+                                    if (isIn(x, y)) {
+                                        set(x, y, value);
+                                        Cell cell = get(x, y);
+                                        if (cell != null) {
+                                            cell.setType(type);
+                                            cell.setOrder(order);
+                                        }
+                                    }
+                                } else {
+                                    // Only type is available
+                                    if (isIn(x, y)) {
+                                        set(x, y, value);
+                                        Cell cell = get(x, y);
+                                        if (cell != null) {
+                                            cell.setType(type);
+                                        }
+                                    }
+                                }
+                            } catch (NumberFormatException e) {
+                                // The part after value is not a type, so we treat it as a comment
+                                if (isIn(x, y)) {
+                                    set(x, y, value);
+                                }
+                            }
+                        } else {
+                            // Basic format: just x, y, value
+                            if (isIn(x, y)) {
+                                set(x, y, value);
+                            }
                         }
                     } catch (NumberFormatException e) {
                         // Skip invalid lines
@@ -242,7 +273,6 @@ public class Ex2Sheet implements Sheet {
         // Re-evaluate all cells after loading
         eval();
     }
-
     @Override
     public void save(String fileName) throws IOException {
         try (PrintWriter writer = new PrintWriter(new FileWriter(fileName))) {
@@ -257,14 +287,14 @@ public class Ex2Sheet implements Sheet {
                         String data = cell.getData();
                         // Only save non-empty cells
                         if (!data.equals(Ex2Utils.EMPTY_CELL)) {
-                            writer.printf("%d,%d,%s%n", i, j, data);
+                            // Save cell data, type and order
+                            writer.printf("%d,%d,%s,%d,%d%n", i, j, data, cell.getType(), cell.getOrder());
                         }
                     }
                 }
             }
         }
     }
-
     @Override
     public String eval(int x, int y) {
         if (!isIn(x, y)) return null;
@@ -360,7 +390,6 @@ public class Ex2Sheet implements Sheet {
                     refs.addAll(range.getCellsInRange());
                     return refs;
                 } catch (Exception e) {
-                    // פורמט טווח לא תקין, המשך לניתוח רגיל
                 }
             }
         }
