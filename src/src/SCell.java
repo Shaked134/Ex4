@@ -40,6 +40,9 @@ public class SCell implements Cell {
 
     @Override
     public void setData(String s) {
+        System.out.println("DEBUG: SCell.setData called with: " + s);
+
+
         if (s == null) {
             this.line = Ex2Utils.EMPTY_CELL;
             this.type = Ex2Utils.TEXT;
@@ -55,6 +58,10 @@ public class SCell implements Cell {
         } else if (s.startsWith("=if(")) {
             // בדיקה אם זו פונקציית IF תקינה
             String result = Ex2F.IfFunction(s);
+
+            System.out.println("DEBUG: SCell.setData - result from IfFunction: " + result);
+
+
             if (result.equals(Ex2Utils.IF_ERR)) {
                 this.type = Ex2Utils.ERR_FORM_FORMAT;
             } else {

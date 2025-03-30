@@ -355,6 +355,7 @@ public class Ex2F {
             return Ex2Utils.ERR;
         }
     }
+
     public static String IfFunction(String expression) {
         expression = removeOuterParentheses(expression);
         if (!expression.startsWith("=if(")) {
@@ -363,32 +364,34 @@ public class Ex2F {
 
         String[] parts = splitIfExpression(expression);
         if (parts.length != 3) {
+            System.out.println("DEBUG: splitIfExpression failed → " + expression);
             return Ex2Utils.IF_ERR;
         }
 
         String condition = parts[0];
         String ifTrue = parts[1];
         String ifFalse = parts[2];
+
+        System.out.println("DEBUG: condition=" + condition + ", ifTrue=" + ifTrue + ", ifFalse=" + ifFalse);
+
         Object condResult = computeCondition(condition);
-        if (condResult == null ||
-                Ex2Utils.ERR_FORM.equals(condResult.toString()) ||
-                Ex2Utils.IF_ERR.equals(condResult.toString()) ||
-                !(condResult instanceof Boolean)) {
+        System.out.println("DEBUG: condResult=" + condResult);
+
+        if (condResult == null || !(condResult instanceof Boolean)) {
             return Ex2Utils.IF_ERR;
         }
 
-        if (condResult instanceof String && condResult.equals(Ex2Utils.IF_ERR)) {
-            return Ex2Utils.IF_ERR;
-        }
         Object trueValue = computeConditionHelper(ifTrue);
         Object falseValue = computeConditionHelper(ifFalse);
+
+        System.out.println("DEBUG: trueValue=" + trueValue + ", falseValue=" + falseValue);
+
         Object result = (Boolean) condResult ? trueValue : falseValue;
 
         if (result == null) {
             return Ex2Utils.IF_ERR;
         }
 
-        // המרה לסטרינג עם טיפול מיוחד
         if (result instanceof Double) {
             return result.toString();
         } else if (result instanceof String) {
@@ -408,6 +411,9 @@ public class Ex2F {
             Object val1 = computeConditionHelper(Formula1);
             Object val2 = computeConditionHelper(Formula2);
 
+            System.out.println("DEBUG: computeCondition - val1=" + val1 + ", val2=" + val2 + ", op=" + op);
+
+
             if (val1 == null || val2 == null) {
                 return Ex2Utils.IF_ERR;
             }
@@ -421,15 +427,20 @@ public class Ex2F {
             }
 
             if (val1 instanceof String && val2 instanceof String) {
-                String str1 = (String)val1;
-                String str2 = (String)val2;
+                String str1 = (String) val1;
+                String str2 = (String) val2;
 
                 boolean result = false;
                 switch (op) {
                     case "=":
-                    case "==": result = str1.equals(str2); break;
-                    case "!=": result = !str1.equals(str2); break;
-                    default: return null;
+                    case "==":
+                        result = str1.equals(str2);
+                        break;
+                    case "!=":
+                        result = !str1.equals(str2);
+                        break;
+                    default:
+                        return null;
                 }
                 return result;
             }
@@ -440,13 +451,27 @@ public class Ex2F {
                 boolean result = false;
 
                 switch (op) {
-                    case "<": result = a < b; break;
-                    case ">": result = a > b; break;
-                    case "<=": result = a <= b; break;
-                    case ">=": result = a >= b; break;
-                    case "==": result = a == b; break;
-                    case "=": result = a == b; break;
-                    case "!=": result = a != b; break;
+                    case "<":
+                        result = a < b;
+                        break;
+                    case ">":
+                        result = a > b;
+                        break;
+                    case "<=":
+                        result = a <= b;
+                        break;
+                    case ">=":
+                        result = a >= b;
+                        break;
+                    case "==":
+                        result = a == b;
+                        break;
+                    case "=":
+                        result = a == b;
+                        break;
+                    case "!=":
+                        result = a != b;
+                        break;
                 }
 
                 return result;
@@ -457,9 +482,14 @@ public class Ex2F {
                 boolean result = false;
                 switch (op) {
                     case "=":
-                    case "==": result = str1.equals(str2); break;
-                    case "!=": result = !str1.equals(str2); break;
-                    default: return null;
+                    case "==":
+                        result = str1.equals(str2);
+                        break;
+                    case "!=":
+                        result = !str1.equals(str2);
+                        break;
+                    default:
+                        return null;
                 }
                 return result;
             }
@@ -467,8 +497,8 @@ public class Ex2F {
         return null;
     }
 
-    private static  String findComparisonOperator(String expression) {
-        String[] ops = {"<=", ">=", "==", "!=", "<", ">" , "="};
+    private static String findComparisonOperator(String expression) {
+        String[] ops = {"<=", ">=", "==", "!=", "<", ">", "="};
         int parentheses = 0;
 
         for (int i = 0; i < expression.length(); i++) {
@@ -490,8 +520,10 @@ public class Ex2F {
     }
 
 
-
     private static Object computeConditionHelper(String expression) {
+        System.out.println("DEBUG: computeConditionHelper - input=" + expression);
+
+
         if (expression == null || expression.isEmpty()) {
             return null;
         }
@@ -515,8 +547,9 @@ public class Ex2F {
         }
 
         // בדיקה אם זוהי הפניה לתא
+        expression = expression.toUpperCase();
         if (isCellReference(expression)) {
-            expression = expression.toUpperCase();
+
 
             if (spreadsheet == null) {
                 return null;
@@ -533,6 +566,19 @@ public class Ex2F {
                 }
 
                 String cellValue = spreadsheet.value(x, y);
+
+                System.out.println("DEBUG: cell (" + x + "," + y + ") raw value = " + cellValue);
+                if (spreadsheet.get(x, y) != null) {
+                    System.out.println("DEBUG: cell (" + x + "," + y + ") data = " + spreadsheet.get(x, y).getData());
+                }
+
+
+
+                String cellRef = expression.toUpperCase();
+                if (cellRef.equalsIgnoreCase(cellValue.trim())) {
+                    return Ex2Utils.IF_ERR;
+                }
+
 
 // בדיקה אם זה נוסחת sum/min/max/average שלא חושבה כמו שצריך
                 if (cellValue != null && (cellValue.equals(Ex2Utils.ERR_FORM) || cellValue.equals(Ex2Utils.ERR_CYCLE)) && spreadsheet.get(x, y) != null) {
@@ -556,10 +602,12 @@ public class Ex2F {
                     return Ex2Utils.IF_ERR; // ערך ברירת מחדל לחישובים
                 }
 
-                String cellRef = expression.toUpperCase();
-                if (cellRef.equalsIgnoreCase(cellValue.trim())) {
-                    return Ex2Utils.IF_ERR;
+// נסי לחשב אם יש פורמולה
+                if (isForm(cellValue)) {
+                    Double computed = computeForm(cellValue);
+                    if (computed != null) return computed;
                 }
+
                 // אם הערך הוא מספר, החזר אותו כמספר
                 if (isNumber(cellValue)) {
                     Double numValue = Double.parseDouble(cellValue);
@@ -567,7 +615,12 @@ public class Ex2F {
                 }
 
                 // אחרת, החזר את הערך כפי שהוא
+                // אם זה טקסט — הפוך ל-uppercase
+                if (isText(cellValue)) {
+                    return cellValue.toUpperCase();
+                }
                 return cellValue;
+
             } catch (Exception e) {
                 e.printStackTrace();
                 return null;
@@ -646,8 +699,9 @@ public class Ex2F {
         }
 
         //if it is text
+        // אם זה טקסט
         if (isText(expression)) {
-            return expression;
+            return expression.toUpperCase();
         }
 
         return null;
@@ -655,7 +709,8 @@ public class Ex2F {
 
 
 
-    private static String[] splitIfExpression(String expression) {
+
+        private static String[] splitIfExpression(String expression) {
         expression = removeOuterParentheses(expression);
 
         if (expression.startsWith("=if(") && expression.endsWith(")")) {
