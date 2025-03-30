@@ -40,8 +40,6 @@ public class SCell implements Cell {
 
     @Override
     public void setData(String s) {
-
-
         if (s == null) {
             this.line = Ex2Utils.EMPTY_CELL;
             this.type = Ex2Utils.TEXT;
@@ -55,23 +53,9 @@ public class SCell implements Cell {
         } else if (Ex2F.isNumber(s)) {
             this.type = Ex2Utils.NUMBER;
         } else if (s.startsWith("=if(")) {
-            // בדיקה אם זו פונקציית IF תקינה
-            String result = Ex2F.IfFunction(s);
-
-
-
-            if (result.equals(Ex2Utils.IF_ERR)) {
-                this.type = Ex2Utils.ERR_FORM_FORMAT;
-            } else {
-                this.type = Ex2Utils.FORM;
-            }
+            this.type = Ex2Utils.FORM;
         } else if (Ex2F.isFUNCTION(s)) {
-            Double result = Ex2F.computeFUNCTION(s);
-            if (result == null) {
-                this.type = Ex2Utils.ERR_FORM_FORMAT;
-            } else {
-                this.type = Ex2Utils.FORM;
-            }
+            this.type = Ex2Utils.FORM;
         } else if (Ex2F.isForm(s)) {
             this.type = Ex2Utils.FORM;
         } else if (Ex2F.isText(s)) {
@@ -80,7 +64,6 @@ public class SCell implements Cell {
             this.type = Ex2Utils.ERR_FORM_FORMAT;
         }
     }
-
     @Override
     public String getData() {
         return line;

@@ -74,6 +74,9 @@ public class Ex2Sheet implements Sheet {
     @Override
     public void set(int x, int y, String s) {
 
+        Ex2F.setSpreadsheet(this);
+
+
         if (!isIn(x, y)) return;  // Check if coordinates are valid
         if (s == null) s = Ex2Utils.EMPTY_CELL;  // Handle null input
 
@@ -84,6 +87,8 @@ public class Ex2Sheet implements Sheet {
 
     @Override
     public void eval() {
+        Ex2F.setSpreadsheet(this);
+
         int[][] dd = depth();
         int maxDepth = 0;
 
@@ -99,7 +104,7 @@ public class Ex2Sheet implements Sheet {
         for (int d = 0; d <= maxDepth; d++) {
             for (int i = 0; i < width(); i++) {
                 for (int j = 0; j < height(); j++) {
-                    Cell cell = get(i,j);
+                    Cell cell = get(i, j);
 
                     // Check for cycles first
                     if (dd[i][j] == -1) {
@@ -123,20 +128,24 @@ public class Ex2Sheet implements Sheet {
 
     @Override
     public int[][] depth() {
+
+        Ex2F.setSpreadsheet(this);
+
+
         int[][] ans = new int[width()][height()];
         boolean[][] visited = new boolean[width()][height()];
 
         // Initialize to -2 (not visited)
-        for(int i = 0; i < width(); i++) {
-            for(int j = 0; j < height(); j++) {
+        for (int i = 0; i < width(); i++) {
+            for (int j = 0; j < height(); j++) {
                 ans[i][j] = -2;
             }
         }
 
         // Calculate depth for each cell
-        for(int i = 0; i < width(); i++) {
-            for(int j = 0; j < height(); j++) {
-                if(ans[i][j] == -2) {
+        for (int i = 0; i < width(); i++) {
+            for (int j = 0; j < height(); j++) {
+                if (ans[i][j] == -2) {
                     calculateDepth(i, j, ans, visited);
                 }
             }
@@ -147,22 +156,22 @@ public class Ex2Sheet implements Sheet {
 
     private int calculateDepth(int x, int y, int[][] depths, boolean[][] visiting) {
         // Already marked as cyclic
-        if(depths[x][y] == -1) return -1;
+        if (depths[x][y] == -1) return -1;
 
         // Currently visiting - found a cycle
-        if(visiting[x][y]) {
+        if (visiting[x][y]) {
             depths[x][y] = -1;
-            get(x,y).setType(Ex2Utils.ERR_CYCLE_FORM);
+            get(x, y).setType(Ex2Utils.ERR_CYCLE_FORM);
             return -1;
         }
 
         // Already calculated non-cyclic depth
-        if(depths[x][y] >= 0) return depths[x][y];
+        if (depths[x][y] >= 0) return depths[x][y];
 
         visiting[x][y] = true;
         Cell cell = get(x, y);
 
-        if(cell == null || cell.getType() != Ex2Utils.FORM) {
+        if (cell == null || cell.getType() != Ex2Utils.FORM) {
             depths[x][y] = 0;
             visiting[x][y] = false;
             return 0;
@@ -172,10 +181,10 @@ public class Ex2Sheet implements Sheet {
         int maxDepth = 0;
         boolean hasCycle = false;
 
-        for(CellEntry ref : refs) {
-            if(ref.isValid() && isIn(ref.getX(), ref.getY())) {
+        for (CellEntry ref : refs) {
+            if (ref.isValid() && isIn(ref.getX(), ref.getY())) {
                 int depthResult = calculateDepth(ref.getX(), ref.getY(), depths, visiting);
-                if(depthResult == -1) {
+                if (depthResult == -1) {
                     hasCycle = true;
                     break;  // Found a cycle, no need to check other references
                 }
@@ -185,7 +194,7 @@ public class Ex2Sheet implements Sheet {
 
         visiting[x][y] = false;
 
-        if(hasCycle) {
+        if (hasCycle) {
             depths[x][y] = -1;
             cell.setType(Ex2Utils.ERR_CYCLE_FORM);
             return -1;
@@ -204,6 +213,9 @@ public class Ex2Sheet implements Sheet {
                 table[i][j] = new SCell(Ex2Utils.EMPTY_CELL);
             }
         }
+
+        Ex2F.setSpreadsheet(this);
+
 
         try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
             // Skip header line
@@ -273,6 +285,7 @@ public class Ex2Sheet implements Sheet {
         // Re-evaluate all cells after loading
         eval();
     }
+
     @Override
     public void save(String fileName) throws IOException {
         try (PrintWriter writer = new PrintWriter(new FileWriter(fileName))) {
@@ -295,6 +308,7 @@ public class Ex2Sheet implements Sheet {
             }
         }
     }
+
     @Override
     public String eval(int x, int y) {
         if (!isIn(x, y)) return null;
@@ -347,6 +361,7 @@ public class Ex2Sheet implements Sheet {
                 return "#ERR";
         }
     }
+
     private boolean hasCycle(int x, int y, boolean[][] visited) {
         Cell cell = get(x, y);
 
@@ -377,6 +392,7 @@ public class Ex2Sheet implements Sheet {
         visited[x][y] = false;
         return false;
     }
+
     private List<CellEntry> findCellReferences(String formula) {
         List<CellEntry> refs = new ArrayList<>();
         if (formula == null || !formula.startsWith("=")) return refs;
@@ -414,21 +430,50 @@ public class Ex2Sheet implements Sheet {
 
     private List<CellEntry> findCellReferencesInExpression(String expr) {
         List<CellEntry> refs = new ArrayList<>();
-        // פיצול לפי אופרטורים וסוגריים
-        String[] parts = expr.split("[+\\-*/(),:=<>!\\s]+");
 
-        for (String part : parts) {
-            part = part.trim();
-            if (!part.isEmpty()) {
-                // בדיקה אם זו הפניה לתא (למשל A1, B2)
-                if (Ex2F.isCellReference(part)) {
-                    CellEntry entry = new CellEntry(part);
-                    if (entry.isValid()) {
-                        refs.add(entry);
+        if (expr == null || expr.isEmpty()) {
+            return refs;
+        }
+
+        // נעבור על המחרוזת תו אחר תו ונחפש הפניות לתאים
+        StringBuilder currentWord = new StringBuilder();
+        boolean insideWord = false;
+
+        for (int i = 0; i < expr.length(); i++) {
+            char c = expr.charAt(i);
+
+            if (Character.isLetterOrDigit(c)) {
+                currentWord.append(c);
+                insideWord = true;
+            } else {
+                if (insideWord) {
+                    // בדיקת המילה שנבנתה
+                    String word = currentWord.toString();
+                    if (Ex2F.isCellReference(word)) {
+                        CellEntry entry = new CellEntry(word);
+                        if (entry.isValid()) {
+                            refs.add(entry);
+                        }
                     }
+
+                    // איפוס המילה
+                    currentWord.setLength(0);
+                    insideWord = false;
                 }
             }
         }
+
+        // בדיקת המילה האחרונה אם קיימת
+        if (insideWord) {
+            String word = currentWord.toString();
+            if (Ex2F.isCellReference(word)) {
+                CellEntry entry = new CellEntry(word);
+                if (entry.isValid()) {
+                    refs.add(entry);
+                }
+            }
+        }
+
         return refs;
     }
 }

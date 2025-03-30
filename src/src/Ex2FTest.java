@@ -307,7 +307,6 @@ public class Ex2FTest {
     }
 
 
-
     @Test
     public void testIfWithCircular8Reference() {
         Ex2Sheet sheet = new Ex2Sheet();
@@ -319,6 +318,9 @@ public class Ex2FTest {
 
         assertEquals(Ex2Utils.IF_ERR, result);
     }
+
+
+
 
 
 
