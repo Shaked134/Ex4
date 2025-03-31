@@ -281,21 +281,25 @@ public class Ex2F {
         return text;
     }
 
+
+    //Function to calculate the sum of all numeric values in a given range
     private static double calcSum(Range2D range, Ex2Sheet sheet) {
         double sum = 0;
         List<CellEntry> cells = range.getCellsInRange();
         for (CellEntry cell : cells) {
             int x = cell.getX();
             int y = cell.getY();
-            String value = sheet.eval(x, y);
+            String value = sheet.eval(x, y); // Evaluate the cell value
             if (isNumber(value)) {
                 double num = Double.parseDouble(value);
-                sum += num;
+                sum += num; // Add numeric value to the sum
             }
 
         }
         return sum;
     }
+
+    // Function to calculate the minimum numeric value in a given range
 
     private static double calcMin(Range2D range, Ex2Sheet sheet) {
         double min = Double.MAX_VALUE;
@@ -308,7 +312,7 @@ public class Ex2F {
             if (isNumber(value)) {
                 double num = Double.parseDouble(value);
                 if (num < min) {
-                    min = num;
+                    min = num; // Update min if a smaller value is found
                 }
                 foundNumber = true;
             }
@@ -316,7 +320,7 @@ public class Ex2F {
         return foundNumber ? min : Ex2Utils.ERR;
     }
 
-
+    // Function to calculate the maximum numeric value in a given range
     private static double calcMax(Range2D range, Ex2Sheet sheet) {
         double max = -Double.MAX_VALUE;
         boolean foundNumber = false;
@@ -328,7 +332,7 @@ public class Ex2F {
             if (isNumber(value)) {
                 double num = Double.parseDouble(value);
                 if (num > max) {
-                    max = num;
+                    max = num; // Update max if a larger value is found
                 }
                 foundNumber = true;
             }
@@ -336,6 +340,7 @@ public class Ex2F {
         return foundNumber ? max : Ex2Utils.ERR;
     }
 
+    // Function to calculate the average of numeric values in a given range
     private static double calcAverage(Range2D range, Ex2Sheet sheet) {
         double sum = 0;
         int count = 0;
@@ -346,18 +351,19 @@ public class Ex2F {
             String value = sheet.eval(x, y);
             if (isNumber(value)) {
                 double num = Double.parseDouble(value);
-                sum += num;
-                count++;
+                sum += num; // Accumulate numeric values
+                count++; // Count how many numeric cells foun
             }
         }
         if (count > 0) {
-            double average = sum / count;
+            double average = sum / count; // Compute average
             return average;
         } else {
             return Ex2Utils.ERR;
         }
     }
 
+    // Function to evaluate an IF expression
     public static String IfFunction(String expression) {
         expression = removeOuterParentheses(expression);
         if (!expression.startsWith("=if(")) return Ex2Utils.IF_ERR;
@@ -377,6 +383,8 @@ public class Ex2F {
         if (result instanceof String) return result.toString().toUpperCase();
         return result.toString();
     }
+
+    // Function to evaluate a condition in IF expression
 
     private static Object computeCondition(String condition) {
         condition = removeOuterParentheses(condition);
@@ -402,6 +410,7 @@ public class Ex2F {
             }
 
             if (val1 instanceof String && val2 instanceof String) {
+                // String comparison
                 String str1 = (String) val1;
                 String str2 = (String) val2;
 
@@ -420,6 +429,7 @@ public class Ex2F {
                 return result;
             }
             try {
+                // Numeric comparison
                 double a = Double.parseDouble(val1.toString());
                 double b = Double.parseDouble(val2.toString());
 
@@ -451,6 +461,8 @@ public class Ex2F {
 
                 return result;
             } catch (NumberFormatException e) {
+                // Fallback to string comparison
+
                 String str1 = val1.toString();
                 String str2 = val2.toString();
 
@@ -471,6 +483,8 @@ public class Ex2F {
         }
         return null;
     }
+
+// Function to find the comparison operator in a condition string (outside of parentheses)
 
     private static String findComparisonOperator(String expression) {
         String[] ops = {"<=", ">=", "==", "!=", "<", ">", "="};
@@ -495,12 +509,16 @@ public class Ex2F {
     }
 
 
+    // Helper function to evaluate various expressions for IF conditions, including formulas, functions, cell references, text, and math operations
     private static Object computeConditionHelper(String expression) {
         if (expression == null || expression.isEmpty()) {
             return null;
         }
 
         expression = expression.trim();
+
+        // Handle expressions that start with '='
+
         if (expression.startsWith("=")) {
             Double formResult = computeForm(expression);
             if (formResult != null) return formResult;
@@ -512,7 +530,6 @@ public class Ex2F {
 
             String formulaExpression = expression.substring(1).trim();
 
-            // זה ההבדל הקריטי 👇
             if (isForm("=" + formulaExpression)) {
                 Double val = computeForm("=" + formulaExpression);
                 if (val != null) return val;
@@ -677,7 +694,7 @@ public class Ex2F {
 
 
 
-
+// Function to split a valid IF expression into condition, ifTrue, and ifFalse parts
     private static String[] splitIfExpression(String expression) {
         expression = removeOuterParentheses(expression);
 
@@ -713,6 +730,7 @@ public class Ex2F {
         return new String[]{parts.get(0), parts.get(1), parts.get(2)};
     }
 
+// Checks if a string is a valid function call: =sum(...), =min(...), etc.
 
     public static boolean isFUNCTION(String expr) {
         if (expr == null || expr.isEmpty()) return false;
@@ -734,6 +752,8 @@ public class Ex2F {
 
         return false;
     }
+    // Evaluates a supported function like =sum(A1:C3), =min(...), etc.
+
     public static Double computeFUNCTION(String expr) {
         if (!isFUNCTION(expr)) {
             return null;
@@ -749,7 +769,7 @@ public class Ex2F {
                 String rangeText = expression.substring(func.length() + 1, expression.length() - 1).trim();
 
                 if (!rangeText.matches("[A-Za-z]\\d+:[A-Za-z]\\d+")) {
-                    return null;
+                    return null; //invalid range syntax
                 }
 
                 try {

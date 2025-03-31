@@ -392,12 +392,13 @@ public class Ex2Sheet implements Sheet {
         visited[x][y] = false;
         return false;
     }
+// Finds all cell references within a given formula (e.g., =A1+B2, =sum(A1:B2), =if(...))
 
     private List<CellEntry> findCellReferences(String formula) {
         List<CellEntry> refs = new ArrayList<>();
         if (formula == null || !formula.startsWith("=")) return refs;
 
-        // טיפול ב-Range2D בפונקציות כמו =sum(A1:B2)
+        // Handle function with Range2D, e.g., =sum(A1:B2)
         if (Ex2F.isFUNCTION(formula)) {
             String funcContent = formula.substring(formula.indexOf('(') + 1, formula.lastIndexOf(')'));
             if (funcContent.contains(":")) {
@@ -407,15 +408,17 @@ public class Ex2Sheet implements Sheet {
                     return refs;
                 } catch (Exception e) {
                 }
+                // Invalid range - ignore
+
             }
         }
 
-        // טיפול בפונקציית IF
+        // Handle IF function: =if(condition, ifTrue, ifFalse)
         if (formula.startsWith("=if(")) {
             String ifContent = formula.substring(4, formula.lastIndexOf(')'));
             String[] parts = ifContent.split(",");
             if (parts.length == 3) {
-                // הוספת הפניות מהתנאי, מהחלק ה"אמת" ומהחלק ה"שקר"
+                // Extract cell references from all parts
                 for (String part : parts) {
                     refs.addAll(findCellReferencesInExpression(part));
                 }
@@ -423,10 +426,12 @@ public class Ex2Sheet implements Sheet {
             }
         }
 
-        // נוסחה רגילה - פיצול לפי אופרטורים וסוגריים
+        // Handle regular formulas (e.g., =A1+B2)
         refs.addAll(findCellReferencesInExpression(formula.substring(1)));
         return refs;
     }
+
+    // Helper function that parses an expression and extracts all valid cell references (e.g., A1, B2)
 
     private List<CellEntry> findCellReferencesInExpression(String expr) {
         List<CellEntry> refs = new ArrayList<>();
@@ -435,7 +440,6 @@ public class Ex2Sheet implements Sheet {
             return refs;
         }
 
-        // נעבור על המחרוזת תו אחר תו ונחפש הפניות לתאים
         StringBuilder currentWord = new StringBuilder();
         boolean insideWord = false;
 
@@ -447,7 +451,7 @@ public class Ex2Sheet implements Sheet {
                 insideWord = true;
             } else {
                 if (insideWord) {
-                    // בדיקת המילה שנבנתה
+                    // Building a potential cell reference token
                     String word = currentWord.toString();
                     if (Ex2F.isCellReference(word)) {
                         CellEntry entry = new CellEntry(word);
@@ -455,15 +459,15 @@ public class Ex2Sheet implements Sheet {
                             refs.add(entry);
                         }
                     }
+                    // Reset the word
 
-                    // איפוס המילה
                     currentWord.setLength(0);
                     insideWord = false;
                 }
             }
         }
 
-        // בדיקת המילה האחרונה אם קיימת
+        // Handle the last token if needed
         if (insideWord) {
             String word = currentWord.toString();
             if (Ex2F.isCellReference(word)) {

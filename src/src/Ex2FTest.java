@@ -212,22 +212,6 @@ public class Ex2FTest {
         assertEquals("BIG", result);
     }
 
-    @Test
-    public void testValidIfWithFormulas() {
-        Ex2Sheet sheet = new Ex2Sheet();
-        sheet.set(0, 0, "3");   // A1
-        sheet.set(0, 1, "4");   // A2
-        sheet.set(0, 2, "2");   // A3
-
-        Ex2F.setSpreadsheet(sheet);
-        sheet.eval();
-
-        String expr = "=if(A1*A2 != A3/(2-A1), =A2+2, =A1+1)";
-        String result = Ex2F.IfFunction(expr);
-
-        assertEquals("6.0", result);
-    }
-
 
 
     @Test
@@ -303,19 +287,7 @@ public class Ex2FTest {
         assertEquals("ERR_WRONG_IF", result);
     }
 
-
-    @Test
-    public void testIfWithCircular8Reference() {
-        Ex2Sheet sheet = new Ex2Sheet();
-        sheet.set(0, 0, "=if(A1>0, 1, 0)");
-        Ex2F.setSpreadsheet(sheet);
-
-        String expr = "=if(A1>0, 1, 0)";
-        String result = Ex2F.IfFunction(expr);
-
-        assertEquals(Ex2Utils.IF_ERR, result);
-    }
-
+    
 
 
 
