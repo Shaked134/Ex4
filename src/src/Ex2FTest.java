@@ -206,9 +206,6 @@ public class Ex2FTest {
 
         sheet.eval();
 
-        System.out.println("DEBUG: A1 raw value: " + sheet.value(0, 0));
-        System.out.println("DEBUG: A1 eval value: " + sheet.eval(0, 0));
-
         String expr = "=if(A1>2,big,small)";
         String result = Ex2F.IfFunction(expr);
 

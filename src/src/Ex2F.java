@@ -151,6 +151,10 @@ public class Ex2F {
                 return null;
             }
         }
+        if (isFUNCTION("=" + expression)) {
+            return computeFUNCTION("=" + expression);
+        }
+
 
         // Try to parse as a simple number
         if (isNumber(expression)) {
@@ -353,60 +357,24 @@ public class Ex2F {
             return Ex2Utils.ERR;
         }
     }
+
     public static String IfFunction(String expression) {
-        System.out.println("Full Expression: " + expression);
-
         expression = removeOuterParentheses(expression);
-        System.out.println("After remove parentheses: " + expression);
-
-        if (!expression.startsWith("=if(")) {
-            return Ex2Utils.IF_ERR;
-        }
-
+        if (!expression.startsWith("=if(")) return Ex2Utils.IF_ERR;
         String[] parts = splitIfExpression(expression);
-        System.out.println("Parts length: " + parts.length);
-
-        for (int i = 0; i < parts.length; i++) {
-            System.out.println("Part " + i + ": " + parts[i]);
-        }
-
-        if (parts.length != 3) {
-            return Ex2Utils.IF_ERR;
-        }
+        if (parts.length != 3) return Ex2Utils.IF_ERR;
 
         String condition = parts[0];
         String ifTrue = parts[1];
         String ifFalse = parts[2];
 
-        System.out.println("Condition: " + condition);
-        System.out.println("If True: " + ifTrue);
-        System.out.println("If False: " + ifFalse);
-
         Object condResult = computeCondition(condition);
-        System.out.println("Condition Result: " + condResult);
+        if (condResult == null || !(condResult instanceof Boolean)) return Ex2Utils.IF_ERR;
 
-        if (condResult == null || !(condResult instanceof Boolean)) {
-            return Ex2Utils.IF_ERR;
-        }
-
-        Object result;
-        if ((Boolean) condResult) {
-            result = computeConditionHelper(ifTrue);
-        } else {
-            result = computeConditionHelper(ifFalse);}
-
-        System.out.println("Final Result: " + result);
-
-        if (result == null) {
-            return Ex2Utils.IF_ERR;
-        }
-
-        if (result instanceof Double) {
-            return result.toString();
-        } else if (result instanceof String) {
-            return result.toString().toUpperCase();
-        }
-
+        Object result = ((Boolean) condResult) ? computeConditionHelper(ifTrue) : computeConditionHelper(ifFalse);
+        if (result == null) return Ex2Utils.IF_ERR;
+        if (result instanceof Double) return result.toString();
+        if (result instanceof String) return result.toString().toUpperCase();
         return result.toString();
     }
 
@@ -533,20 +501,26 @@ public class Ex2F {
         }
 
         expression = expression.trim();
-
         if (expression.startsWith("=")) {
             Double formResult = computeForm(expression);
             if (formResult != null) return formResult;
 
-//if it is FUNCTIO
-                if (isFUNCTION(expression)) {
+            if (isFUNCTION(expression)) {
                 Double val = computeFUNCTION(expression);
                 return val;
             }
 
             String formulaExpression = expression.substring(1).trim();
+
+            // זה ההבדל הקריטי 👇
+            if (isForm("=" + formulaExpression)) {
+                Double val = computeForm("=" + formulaExpression);
+                if (val != null) return val;
+            }
+
             return computeConditionHelper(formulaExpression);
         }
+
 
 // Check if this is a number
         if (isNumber(expression)) {
@@ -688,13 +662,11 @@ public class Ex2F {
                 }
             }
         }
-
         // if it is form
         if (isForm("=" + expression)) {
             Double val = computeForm("=" + expression);
             return val;
         }
-
         //if it is text
         if (isText(expression)) {
             return expression.toUpperCase();
