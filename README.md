@@ -1,0 +1,90 @@
+ # # 📊 Ex4 - Object-Oriented Spreadsheet System (Advanced)
+
+
+
+## 📘 Overview
+
+This project extends a basic object-oriented spreadsheet system written in Java, originally designed in **Ex2**, by adding:
+
+- 📐 Range support (e.g., `A1:C5`)
+- 🧮 Built-in functions: `sum`, `min`, `max`, `average`
+- 🔁 Conditional expressions using `if(...)`
+- 🚫 Error handling (syntax and circular dependencies)
+
+ #### in EX2:
+- Text (e.g., "Hello", "123abc")
+- Numbers (e.g., 42, 3.14, -5)
+- Formulas (e.g., =A1+2, =B2/(A3*2))
+
+## ⚙️ How It Works
+
+### 🧾 1. Initialization
+A spreadsheet is created with default size (e.g. 9x17), and all cells are initialized as empty.
+
+### ⌨️ 2. Input
+User can enter:
+- Plain text
+- Numbers
+- Formulas (including references, functions, and if-conditions)
+
+### ➗ 3. Formula Evaluation
+- Supports arithmetic: `+`, `-`, `*`, `/`
+- Supports parentheses and nested expressions
+- Resolves references recursively
+
+ ### 4. Error Detection:
+  - If a formula contains invalid syntax (e.g., =1++2, =sum(A1:B2), it is flagged with ERR_FORM!.
+
+- If a formula introduces a circular reference (e.g., A1 → B1 → C1 → A1), it is flagged with ERR_CYCLE!.
+
+- If a formula references a cell that contains an error, the error is propagated to the current cell (e.g., if A1 = ERR_FORM!, then =A1+2 also results in ERR_FORM!).
+
+- If a function (e.g., sum, average) is called with a malformed range or includes non-numeric values, the function returns ERR_FORM!.
+
+- If an if condition is not valid (e.g., =if(Hello, 1, 2)), it is also flagged with ERR_FORM!.
+
+## 📐 Example
+A1 = 5
+A2 = =A1+3 → 8
+A3 = =if(A2>6, "BIG", "SMALL") → "BIG"
+A4 = =sum(A1:A2) → 13.0
+A5 = =A5+1 → ERR_CYCLE!
+
+
+
+
+
+---
+
+## 🧪 Testing
+The program is tested using JUnit. Tests cover:
+
+- ✅ Input parsing
+- 🔁 Recursive formula resolution
+- ❗ Error propagation
+- 🧠 Depth calculation
+- 📦 Range handling
+
+---
+
+## 💾 Save & Load
+Spreadsheet supports saving and loading `.csv` files:
+
+- Only non-empty cells are saved
+- Supports reloading a saved spreadsheet session
+
+---
+
+## 🖼️ Screenshot
+
+<img width="1440" alt="Screenshot 2025-03-31 at 16 11 33" src="https://github.com/user-attachments/assets/6d72b4e2-2728-41d0-aec1-094fc89452ad" />
+
+---
+## 🧠 Summary
+This project demonstrates:
+
+- 🧮 Formula evaluation
+- 🔍 Error detection
+- 🕸️ Dependency management
+- 🧱 Object-oriented design
+
