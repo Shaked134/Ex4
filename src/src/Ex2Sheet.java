@@ -393,43 +393,49 @@ public class Ex2Sheet implements Sheet {
         return false;
     }
 // Finds all cell references within a given formula (e.g., =A1+B2, =sum(A1:B2), =if(...))
+private List<CellEntry> findCellReferences(String formula) {
+    List<CellEntry> refs = new ArrayList<>();
+    if (formula == null || !formula.startsWith("=")) return refs;
 
-    private List<CellEntry> findCellReferences(String formula) {
-        List<CellEntry> refs = new ArrayList<>();
-        if (formula == null || !formula.startsWith("=")) return refs;
+    // Handle function with Range2D, e.g., =sum(A1:B2)
+    if (Ex2F.isFUNCTION(formula)) {
+        int openParen = formula.indexOf('(');
+        int closeParen = formula.lastIndexOf(')');
+        if (openParen == -1 || closeParen == -1 || closeParen <= openParen) return refs;
 
-        // Handle function with Range2D, e.g., =sum(A1:B2)
-        if (Ex2F.isFUNCTION(formula)) {
-            String funcContent = formula.substring(formula.indexOf('(') + 1, formula.lastIndexOf(')'));
-            if (funcContent.contains(":")) {
-                try {
-                    Range2D range = new Range2D(funcContent);
-                    refs.addAll(range.getCellsInRange());
-                    return refs;
-                } catch (Exception e) {
-                }
-                // Invalid range - ignore
-
-            }
-        }
-
-        // Handle IF function: =if(condition, ifTrue, ifFalse)
-        if (formula.startsWith("=if(")) {
-            String ifContent = formula.substring(4, formula.lastIndexOf(')'));
-            String[] parts = ifContent.split(",");
-            if (parts.length == 3) {
-                // Extract cell references from all parts
-                for (String part : parts) {
-                    refs.addAll(findCellReferencesInExpression(part));
-                }
+        String funcContent = formula.substring(openParen + 1, closeParen);
+        if (funcContent.contains(":")) {
+            try {
+                Range2D range = new Range2D(funcContent);
+                refs.addAll(range.getCellsInRange());
                 return refs;
+            } catch (Exception e) {
+                // Invalid range – ignore
             }
         }
-
-        // Handle regular formulas (e.g., =A1+B2)
-        refs.addAll(findCellReferencesInExpression(formula.substring(1)));
-        return refs;
     }
+
+    // Handle IF function: =if(condition, ifTrue, ifFalse)
+    if (formula.startsWith("=if(")) {
+        int closeParen = formula.lastIndexOf(')');
+        if (closeParen == -1 || closeParen <= 4) return refs;
+
+        String ifContent = formula.substring(4, closeParen); // safely extract inside of if(...)
+        String[] parts = ifContent.split(",", -1); // include empty parts
+
+        if (parts.length == 3) {
+            for (String part : parts) {
+                refs.addAll(findCellReferencesInExpression(part));
+            }
+            return refs;
+        }
+    }
+
+    // Handle regular formulas (e.g., =A1+B2)
+    refs.addAll(findCellReferencesInExpression(formula.substring(1)));
+    return refs;
+}
+
 
     // Helper function that parses an expression and extracts all valid cell references (e.g., A1, B2)
 
