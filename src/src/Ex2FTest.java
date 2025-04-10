@@ -231,7 +231,7 @@ public class Ex2FTest {
         sheet.set(0, 1, "banana");
         Ex2F.setSpreadsheet(sheet);
 
-        String expr = "=if(A2=A2,same,diff)";
+        String expr = "=if(A2==A2,same,diff)";
         String result = Ex2F.IfFunction(expr);
         assertEquals("SAME", result);
     }
@@ -291,18 +291,46 @@ public class Ex2FTest {
 
 
 
+    @Test
+    public void testNestedIfWithComparison() {
+        Ex2Sheet sheet = new Ex2Sheet();
+        Ex2F.setSpreadsheet(sheet);
+
+        sheet.set(0, 0, "=33"); // A1
+        sheet.set(0, 1, "=40"); // A2
+
+        sheet.eval();
+
+        String expr = "=if(A2>A1,=if(A2>1,4,5),2)";
+        String result = Ex2F.IfFunction(expr);
+
+        assertEquals("4.0", result);
+    }
+
+
+
+
+
+    @Test
+    public void testIfWithFunctionInCondition() {
+        Ex2Sheet sheet = new Ex2Sheet();
+        Ex2F.setSpreadsheet(sheet);
+
+        sheet.set(0, 0, "2");  // A1
+        sheet.set(0, 1, "1");  // A2
+
+        String expr = "=if(=max(A1:A2)>0, 4, 5)";
+        String result = Ex2F.IfFunction(expr);
+
+        assertEquals("4.0", result);
+    }
 
 
 
 
 
 
-
-
-
-
-
-//tests for min,max,sum ans avrege:
+//tests for min,max,sum , avrege:
 
     @Test
     public void testComputeFunctionDirectly() {
@@ -439,7 +467,6 @@ public class Ex2FTest {
         Double maxResult = Ex2F.computeFUNCTION("=max(A0:E4)");
         Double avgResult = Ex2F.computeFUNCTION("=average(A0:E4)");
 
-        // בדיקת התוצאות על טווח גדול (5x5 = 25 תאים)
         assertEquals(25.0, sumResult);
         assertEquals(1.0, minResult);
         assertEquals(1.0, maxResult);
@@ -479,10 +506,10 @@ public class Ex2FTest {
         sheet.set(0, 1, "20");
 
         sheet.eval();
-        Double result1 = Ex2F.computeFUNCTION("=summ(A0:A1)");           // שם פונקציה לא קיים
-        Double result2 = Ex2F.computeFUNCTION("=SUM(A0:A1)");            // אותיות גדולות
-        Double result3 = Ex2F.computeFUNCTION("=minimum(A0:A1)");        // שם פונקציה ארוך יותר
-        Double result4 = Ex2F.computeFUNCTION("=av e rage(A0:A1)");      // רווח בשם הפונקציה
+        Double result1 = Ex2F.computeFUNCTION("=summ(A0:A1)");
+        Double result2 = Ex2F.computeFUNCTION("=SUM(A0:A1)");
+        Double result3 = Ex2F.computeFUNCTION("=minimum(A0:A1)");
+        Double result4 = Ex2F.computeFUNCTION("=av e rage(A0:A1)");
         assertNull(result1);
         if (result2 == null) {
             assertNull(result2);

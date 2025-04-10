@@ -5,7 +5,6 @@ import src.Range2D;
 
 import static src.Ex2Sheet.*;
 
-
 public class Ex2F {
 
     private static final String OPERATORS = "+-*/";
@@ -141,7 +140,7 @@ public class Ex2F {
         }
 
         if (expression.startsWith("if(")) {
-            String result = IfFunction("=" + expression);
+            String result = IfFunction(  expression);
             if (result.equals(Ex2Utils.IF_ERR)) {
                 return null;
             }
@@ -379,8 +378,17 @@ public class Ex2F {
 
         Object result = ((Boolean) condResult) ? computeConditionHelper(ifTrue) : computeConditionHelper(ifFalse);
         if (result == null) return Ex2Utils.IF_ERR;
+
         if (result instanceof Double) return result.toString();
-        if (result instanceof String) return result.toString().toUpperCase();
+
+        if (result instanceof String) {
+            String strResult = result.toString().trim().toLowerCase();
+            if (strResult.startsWith("if(")) {
+                return IfFunction("=" + strResult);
+            }
+            return result.toString().toUpperCase();
+        }
+
         return result.toString();
     }
 
@@ -394,8 +402,8 @@ public class Ex2F {
             String Formula1 = condition.substring(0, index).trim();
             String Formula2 = condition.substring(index + op.length()).trim();
             Object val1 = computeConditionHelper(Formula1);
-            Object val2 = computeConditionHelper(Formula2);
 
+            Object val2 = computeConditionHelper(Formula2);
 
             if (val1 == null || val2 == null) {
                 return Ex2Utils.IF_ERR;
@@ -487,7 +495,7 @@ public class Ex2F {
 // Function to find the comparison operator in a condition string (outside of parentheses)
 
     private static String findComparisonOperator(String expression) {
-        String[] ops = {"<=", ">=", "==", "!=", "<", ">", "="};
+        String[] ops = {"<=", ">=", "==", "!=", "<", ">"};
         int parentheses = 0;
 
         for (int i = 0; i < expression.length(); i++) {
@@ -585,6 +593,7 @@ public class Ex2F {
                     if (result == null || result.equals(Ex2Utils.ERR)) {
                         return Ex2Utils.IF_ERR;
                     }
+
                     return result;
                 }
 

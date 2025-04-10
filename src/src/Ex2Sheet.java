@@ -346,7 +346,7 @@ public class Ex2Sheet implements Sheet {
                     return Ex2Utils.ERR_FORM;
                 }
 
-                // טיפול בנוסחאות רגילות
+// Handling regular formulas
                 Double result = Ex2F.computeForm(data);
                 if (result != null) {
                     return result.toString();

@@ -8,7 +8,9 @@ public class Range2D {
 private CellEntry Index2D_a ;
     private CellEntry  Index2D_b;
 
-public  Range2D( String  range){
+    // Constructor that parses a string like "A1:C3" into two CellEntry objects
+
+    public  Range2D( String  range){
     String[] parts = range.split(":");
     this.Index2D_a= new CellEntry( parts[0].toUpperCase());
     this.Index2D_b=  new CellEntry( parts[1].toUpperCase());
@@ -21,6 +23,7 @@ public  Range2D( String  range){
     return Index2D_b;
 }
 
+    // Returns a list of all cells within the rectangular range between start and end
 
     public List<CellEntry> getCellsInRange() {
         List<CellEntry> cells = new ArrayList<>();
@@ -39,6 +42,8 @@ public  Range2D( String  range){
             startY = endY;
             endY = temp;
         }
+        // Iterate over all cells in the rectangular range and add them to the list
+
         for (int x = startX; x <= endX; x++) {
             for (int y = startY; y <= endY; y++) {
                 cells.add(new CellEntry(x, y));
@@ -48,6 +53,7 @@ public  Range2D( String  range){
         return cells;
     }
 
+    // Returns a string representation of the range (e.g., "A1:C3")
 
 @Override
 public String toString() {
